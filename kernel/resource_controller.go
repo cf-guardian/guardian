@@ -13,8 +13,16 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
+
+/*
+	The kernel package encapsulates the operating system features required
+	to create a container.
+*/
 package kernel
 
-type Resource interface {
+/*
+	A resource controller virtualises a specific type of resource.
+*/
+type ResourceController interface {
 	Init() error
 }

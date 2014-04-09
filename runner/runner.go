@@ -13,24 +13,12 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-package guardian
 
-import (
-	"github.com/cf-guardian/guardian/kernel"
-	"testing"
-)
-
-type testResourceController struct{ a int }
-
-func (testResourceController) Init() error {
-	return nil
-}
-
-func run(res kernel.ResourceController) {
-
-}
-
-func TestRM(t *testing.T) {
-	var x testResourceController
-	run(x)
-}
+/*
+	The runner package builds a container and runs a single command
+	in the container. The container is created from a list of
+	resource controllers each of which virtualises a specific type of
+	resource so that the command runs in an isolated environment with
+	respect to resources of that type.
+*/
+package runner
