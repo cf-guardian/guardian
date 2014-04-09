@@ -2,6 +2,12 @@
 
 Experiments to improve the testability of [garden](https://github.com/pivotal-cf-experimental/garden).
 
+## Documentation
+
+Documentation is available at [godoc.org](http://godoc.org/github.com/cf-guardian/guardian).
+
+If this hasn't been refreshed for a while, feel free to click the "Refresh now" link.
+
 ## Development Environment Setup
 
 1. Ensure the following pre-requisites are installed:
