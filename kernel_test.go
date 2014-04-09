@@ -22,15 +22,16 @@ import (
 
 type testResourceController struct{ a int }
 
-func (testResourceController) Init() error {
+func (testResourceController) Init(rCtx kernel.ResourceContext) error {
 	return nil
 }
 
 func run(res kernel.ResourceController) {
-
+	rCtx := kernel.CreateResourceContext("/")
+	res.Init(rCtx)
 }
 
-func TestRM(t *testing.T) {
+func TestRC(t *testing.T) {
 	var x testResourceController
 	run(x)
 }

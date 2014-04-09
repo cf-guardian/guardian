@@ -24,5 +24,32 @@ package kernel
 	A resource controller provides containment for a specific type of resource.
 */
 type ResourceController interface {
-	Init() error
+	Init(rCtx ResourceContext) error
+}
+
+/*
+	A resource context provides configuration for resource controllers.
+*/
+type ResourceContext interface {
+
+	/*
+		Returns the path of the root file system. A root file system is an
+		arbitrary filesystem directory.
+	*/
+	GetRootFS() string
+}
+
+type resourceContext struct {
+	rootfs string
+}
+
+func (rCtx *resourceContext) GetRootFS() string {
+	return rCtx.rootfs
+}
+
+/*
+	Creates a ResourceContext with the given root file system.
+ */
+func CreateResourceContext(rootfs string) *resourceContext {
+	return &resourceContext{rootfs}
 }

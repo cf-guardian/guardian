@@ -22,3 +22,13 @@
 	respect to resources of that type.
 */
 package runner
+
+import (
+	"github.com/cf-guardian/guardian/container"
+	"github.com/cf-guardian/guardian/kernel"
+)
+
+func BuildContainer(rCtx kernel.ResourceContext, rcs []kernel.ResourceController) container.Container {
+
+	return nil
+}
