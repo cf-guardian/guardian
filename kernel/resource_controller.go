@@ -21,7 +21,7 @@
 package kernel
 
 /*
-	A resource controller virtualises a specific type of resource.
+	A resource controller provides containment for a specific type of resource.
 */
 type ResourceController interface {
 	Init() error
