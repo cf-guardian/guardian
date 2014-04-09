@@ -30,6 +30,11 @@ If the tests succeed, this should print `PASS`.
 
 If your favourite text editor is not sufficient, try [Eclipse](http://www.eclipse.org/downloads/) with the [goclipse plugin](https://github.com/sesteel/goclipse) or [IntelliJ IDEA](http://www.jetbrains.com/idea/) with the [go plugin](https://github.com/go-lang-plugin-org/go-lang-idea-plugin).
 
+Source code is formatted according to standard Go conventions. To re-format the code, issue:
+```
+go fmt ./...
+```
+
 ## Contributing
 [Pull requests](http://help.github.com/send-pull-requests) are welcome; see the [contributor guidelines](CONTRIBUTING.md) for details.
 

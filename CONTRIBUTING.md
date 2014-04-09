@@ -28,4 +28,5 @@ We prefer pull requests with very small, single commits with a single purpose.
 Your pull request is much more likely to be accepted if it:
 * Includes tests
 * Is small and focused
+* Conforms to standard Go formatting conventions (`go fmt`)
 * Contains a message explaining the intent of your change.
