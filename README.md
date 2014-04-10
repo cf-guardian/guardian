@@ -12,11 +12,20 @@ If this hasn't been refreshed for a while, feel free to click the "Refresh now" 
 
 1. Ensure the following pre-requisites are installed:
     * [git](http://git-scm.com/downloads)
-    * [Go](http://golang.org/) 1.2.1 or later: either [download](http://golang.org/doc/install) a specific version or use [gvm](https://github.com/moovweb/gvm).
+    * [Go](http://golang.org/) 1.2.1 or later:
 
-2. Create a Go [workspace](http://golang.org/doc/code.html#Organization) directory, such as `$HOME/go`, and add the path of this directory to the beginning of `$GOPATH`.
+        - either [download](http://golang.org/doc/install) a specific version
+        - or use [gvm](https://github.com/moovweb/gvm)
+        - or even `port install go` with [MacPorts](http://www.macports.org/).
 
-3. Get this repository into your workspace by issuing:
+2. Create a Go [workspace](http://golang.org/doc/code.html#Organization) directory, such as `$HOME/go`, and add the path of this directory to the
+beginning of a new environment variable called `GOPATH`. You might want to put this last step in your profile.
+    ```
+    $ mkdir $HOME/go
+    $ export GOPATH=$HOME/go
+    ```
+
+3. Get this repository into your workspace (`src` directory) by issuing:
     ```
     $ go get github.com/cf-guardian/guardian
     ```
