@@ -24,7 +24,7 @@ import (
 )
 
 type Syscall interface {
-	BindMount(source string, mountPoint string, flags uintptr) error
+	BindMount(source string, mountPoint string, flags... uintptr) error
 	Unmount(mountPoint string) error
 }
 
@@ -39,11 +39,11 @@ const NO_FLAGS uintptr = 0
 const MS_RDONLY uintptr = trueSyscall.MS_RDONLY
 
 func (_ *syscallWrapper) BindMount(source string, mountPoint string, flags... uintptr) error {
-	fl := trueSyscall.MS_BIND
-	for f := range flags {
-		fl := fl || f
+	var fl uintptr = uintptr(trueSyscall.MS_BIND)
+	for _, f := range flags {
+		fl = fl + f
 	}
-	return trueSyscall.Mount(source, target, fl, "")
+	return trueSyscall.Mount(source, mountPoint, "", fl, "")
 }
 
 func (_ *syscallWrapper) Unmount(mountPoint string) error {

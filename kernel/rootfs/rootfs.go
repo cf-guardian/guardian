@@ -24,7 +24,7 @@ import (
 	"log"
 	"os"
 	"github.com/cf-guardian/guardian/kernel/syscall"
-	"github.com/cf-guardian/guardian/error"
+	"github.com/cf-guardian/guardian/gerror"
 )
 
 /*
@@ -58,20 +58,22 @@ func Generate(prototype string, sc syscall.Syscall) (root string, err error) {
 	var rwPath string
 	rwPath, err = ioutil.TempDir("/tmp/guardian", "tmp-rootfs")
 	if err != nil {
-		err = error.FromError(err)
+		err = gerror.FromError(err)
 	} else {
+	        _ = os.MkdirAll(rwPath, 0700)
 		root, err = ioutil.TempDir("/tmp/guardian", "mnt")
 		if err != nil {
-			err = error.FromError(err)
+			err = gerror.FromError(err)
 		} else {
+		        _ = os.MkdirAll(root, 0700)
 			err = sc.BindMount(prototype, root, syscall.NO_FLAGS)
 			if err != nil {
-				err = error.FromError(err)
+				err = gerror.FromError(err)
 			} else {
 				err = sc.BindMount(prototype, root, syscall.MS_RDONLY)
 
 				if err != nil {
-					err = error.FromError(err)
+					err = gerror.FromError(err)
 					if e := sc.Unmount(root); e != nil {
 						log.Printf("Encountered %q while recovering from %q", e, err)
 					}

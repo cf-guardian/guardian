@@ -17,28 +17,33 @@
 package rootfs_test
 
 import (
-	"ioutil"
+	"io/ioutil"
+	"os"
 	"testing"
-	"github.com/cf-guardian/guardian/kernel/syscall"
-	"github.com/cf-guardian/guardian/kernel/rootfs""
+	"github.com/cf-guardian/guardian/kernel/rootfs"
 )
 
 type stubSyscall struct {
 	callCount int
 }
 
-func (ss *stubSyscall) Mount(source string, target string, fstype string, flags uintptr, data string) error {
+func (ss *stubSyscall) BindMount(source string, mountPoint string, flags... uintptr) error {
 	return nil
+}
+
+func (ss *stubSyscall) Unmount(mountPoint string) error {
+     return nil
 }
 
 func TestGenerate(t *testing.T) {
 	prototype, err := ioutil.TempDir("/tmp/guardian", "test-rootfs")
 	if err != nil {
-		t.Errorf("%q", err)
+		t.Errorf("%s", err)
 	}
+	os.MkdirAll(prototype, 0700)
 
-	_, err := rootfs.Generate(prototype, &stubSyscall{})
+	_, err = rootfs.Generate(prototype, &stubSyscall{})
 	if err != nil {
-		t.Errorf("%q", err)
+		t.Errorf("%s", err)
 	}	
 }

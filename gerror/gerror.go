@@ -15,10 +15,10 @@ limitations under the License.
 */
 
 /*
-Package error provides an improved error type which captures the stack trace
+Package gerror provides an improved error type which captures the stack trace
 at construction time.
 */
-package error
+package gerror
 
 import (
 	"runtime"
@@ -26,7 +26,7 @@ import (
 
 const stackSize = 4096
 
-// Returns an Err containing the given message.
+// Returns an error containing the given message.
 func New(message string) *err {
 	var stack [stackSize]byte
 
@@ -38,9 +38,9 @@ func New(message string) *err {
 func FromError(cause error) *err {
 	var stack [stackSize]byte
 
-	runtime.Stack(stack[:], false)
+	n := runtime.Stack(stack[:], false)
 
-	return &err{"Error caused by: " + cause.Error(), stack[:]}
+	return &err{"Error caused by: " + cause.Error(), stack[:n]}
 }
 
 type err struct {
@@ -49,5 +49,5 @@ type err struct {
 }
 
 func (e *err) Error() string {
-	return e.message + string(e.stackTrace)
+	return e.message + "\n" + string(e.stackTrace[:])
 }

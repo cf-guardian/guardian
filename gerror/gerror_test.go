@@ -14,11 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package error_test
+package gerror_test
 
 import (
 	"errors"
-	"github.com/cf-guardian/guardian/error"
+	"github.com/cf-guardian/guardian/gerror"
 	"strings"
 	"testing"
 )
@@ -27,7 +27,7 @@ const testMessage = "test message"
 
 func TestMessageCapture(t *testing.T) {
 
-	e := error.New(testMessage)
+	e := gerror.New(testMessage)
 
 	actual := e.Error()
 
@@ -40,7 +40,7 @@ func TestStackTraceCapture(t *testing.T) {
 
 	const stackPortion = "error_test.TestStackTraceCapture"
 
-	e := error.New(testMessage)
+	e := gerror.New(testMessage)
 
 	actual := e.Error()
 
@@ -53,7 +53,7 @@ func TestFromError(t *testing.T) {
 
 	cause := errors.New(testMessage)
 
-	e := error.FromError(cause)
+	e := gerror.FromError(cause)
 
 	actual := e.Error()
 
