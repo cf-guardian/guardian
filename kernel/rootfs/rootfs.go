@@ -15,7 +15,7 @@
 */
 
 /*
-	The rootfs package encapsulates the container's root filesystem.
+Package rootfs package encapsulates the container's root filesystem.
 */
 package rootfs
 
