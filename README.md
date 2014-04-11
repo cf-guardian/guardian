@@ -1,3 +1,5 @@
+[![GoDoc](https://godoc.org/github.com/cf-guardian/guardian/kernel?status.png)](https://godoc.org/github.com/cf-guardian/guardian/kernel)
+
 # Guardian
 
 Experiments to improve the testability of [garden](https://github.com/pivotal-cf-experimental/garden).
@@ -49,6 +51,8 @@ Source code is formatted according to standard Go conventions. To re-format the 
 ```
 go fmt ./...
 ```
+
+Also, you can [lint](http://go-lint.appspot.com/github.com/cf-guardian/guardian) the code if you like.
 
 ## Contributing
 [Pull requests](http://help.github.com/send-pull-requests) are welcome; see the [contributor guidelines](CONTRIBUTING.md) for details.
