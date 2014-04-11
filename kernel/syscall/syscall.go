@@ -24,12 +24,28 @@ import (
 )
 
 type Syscall interface {
-	Mount(source string, target string, fstype string, flags uintptr, data string) error
+	BindMount(source string, mountPoint string, flags uintptr) error
+	Unmount(mountPoint string) error
 }
 
 type syscallWrapper struct {
 }
 
-func (scw *syscallWrapper) Mount(source string, target string, fstype string, flags uintptr, data string) error {
-	return trueSyscall.Mount(source, target, fstype, flags, data)
+func New() Syscall {
+	return new(syscallWrapper)
+}
+
+const NO_FLAGS uintptr = 0
+const MS_RDONLY uintptr = trueSyscall.MS_RDONLY
+
+func (_ *syscallWrapper) BindMount(source string, mountPoint string, flags... uintptr) error {
+	fl := trueSyscall.MS_BIND
+	for f := range flags {
+		fl := fl || f
+	}
+	return trueSyscall.Mount(source, target, fl, "")
+}
+
+func (_ *syscallWrapper) Unmount(mountPoint string) error {
+	return trueSyscall.Unmount(mountPoint, 0)
 }

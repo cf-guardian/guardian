@@ -15,8 +15,8 @@
 */
 
 /*
-	The container package is an abstract interface for running commands
-	in containers.
+The container package is an abstract interface for running commands
+in containers.
 */
 package container
 

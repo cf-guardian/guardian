@@ -20,7 +20,11 @@ Package rootfs encapsulates the container's root filesystem.
 package rootfs
 
 import (
-	//"path/filepath"
+	"io/ioutil"
+	"log"
+	"os"
+	"github.com/cf-guardian/guardian/kernel/syscall"
+	"github.com/cf-guardian/guardian/error"
 )
 
 /*
@@ -36,7 +40,9 @@ import (
 	such as `aufs` or `overlayfs`, is available, it will be used to
 	create the result. Otherwise, the result is a mounted filesystem
 	consisting of a patchwork quilt of read-write temporary directories
-	and the prototype.
+	and the prototype. TODO: decide which of these to support.
+
+	TODO: must this function be called under root?
 	
 	If Generate fails, it has no side-effects.
 	
@@ -48,6 +54,43 @@ import (
 	script, except that Generate does not copy `wshd` into the
 	generated filesystem.
 */
-func Generate(prototype string) (root string, err error) {
-	return "", nil
+func Generate(prototype string, sc syscall.Syscall) (root string, err error) {
+	var rwPath string
+	rwPath, err = ioutil.TempDir("/tmp/guardian", "tmp-rootfs")
+	if err != nil {
+		err = error.FromError(err)
+	} else {
+		root, err = ioutil.TempDir("/tmp/guardian", "mnt")
+		if err != nil {
+			err = error.FromError(err)
+		} else {
+			err = sc.BindMount(prototype, root, syscall.NO_FLAGS)
+			if err != nil {
+				err = error.FromError(err)
+			} else {
+				err = sc.BindMount(prototype, root, syscall.MS_RDONLY)
+
+				if err != nil {
+					err = error.FromError(err)
+					if e := sc.Unmount(root); e != nil {
+						log.Printf("Encountered %q while recovering from %q", e, err)
+					}
+				}
+			}
+
+			if err != nil {
+				if e := os.Remove(root); e != nil {
+					log.Printf("Encountered %q while recovering from %q", e, err)
+				}
+			}
+		}
+
+		if err != nil {
+			if e := os.Remove(rwPath); e != nil {
+				log.Printf("Encountered %q while recovering from %q", e, err)
+			}
+		}
+	}
+
+	return root, err
 }
