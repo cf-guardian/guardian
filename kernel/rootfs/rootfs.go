@@ -55,17 +55,16 @@ import (
 	generated filesystem.
 */
 func Generate(prototype string, sc syscall.Syscall) (root string, err error) {
+        os.MkdirAll("/tmp/guardian", 0700)
 	var rwPath string
 	rwPath, err = ioutil.TempDir("/tmp/guardian", "tmp-rootfs")
 	if err != nil {
 		err = gerror.FromError(err)
 	} else {
-	        _ = os.MkdirAll(rwPath, 0700)
 		root, err = ioutil.TempDir("/tmp/guardian", "mnt")
 		if err != nil {
 			err = gerror.FromError(err)
 		} else {
-		        _ = os.MkdirAll(root, 0700)
 			err = sc.BindMount(prototype, root, syscall.NO_FLAGS)
 			if err != nil {
 				err = gerror.FromError(err)

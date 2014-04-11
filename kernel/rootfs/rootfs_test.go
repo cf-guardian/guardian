@@ -17,6 +17,7 @@
 package rootfs_test
 
 import (
+        "fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -36,14 +37,19 @@ func (ss *stubSyscall) Unmount(mountPoint string) error {
 }
 
 func TestGenerate(t *testing.T) {
-	prototype, err := ioutil.TempDir("/tmp/guardian", "test-rootfs")
+        os.MkdirAll("/tmp/guardian-test", 0700)
+	prototype, err := ioutil.TempDir("/tmp/guardian-test", "test-rootfs")
 	if err != nil {
 		t.Errorf("%s", err)
+		return
 	}
 	os.MkdirAll(prototype, 0700)
 
-	_, err = rootfs.Generate(prototype, &stubSyscall{})
+	root, err := rootfs.Generate(prototype, &stubSyscall{})
 	if err != nil {
 		t.Errorf("%s", err)
-	}	
+		return
+	}
+		
+	fmt.Println(root)
 }
