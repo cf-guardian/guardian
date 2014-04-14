@@ -55,39 +55,43 @@ import (
 	generated filesystem.
 */
 func Generate(prototype string, sc syscall.Syscall) (root string, err error) {
-        os.MkdirAll("/tmp/guardian", 0700)
 	var rwPath string
+	os.MkdirAll("/tmp/guardian", 0700)
 	rwPath, err = ioutil.TempDir("/tmp/guardian", "tmp-rootfs")
 	if err != nil {
 		err = gerror.FromError(err)
 	} else {
-		root, err = ioutil.TempDir("/tmp/guardian", "mnt")
-		if err != nil {
-			err = gerror.FromError(err)
-		} else {
-			err = sc.BindMount(prototype, root, syscall.NO_FLAGS)
+		defer func() {
 			if err != nil {
-				err = gerror.FromError(err)
-			} else {
-				err = sc.BindMount(prototype, root, syscall.MS_RDONLY)
-
-				if err != nil {
-					err = gerror.FromError(err)
-					if e := sc.Unmount(root); e != nil {
-						log.Printf("Encountered %q while recovering from %q", e, err)
-					}
+				if e := os.Remove(rwPath); e != nil {
+					log.Printf("Encountered %q while recovering from %q", e, err)
 				}
 			}
+		}()
+	}
 
+	root, err = ioutil.TempDir("/tmp/guardian", "mnt")
+	if err != nil {
+		err = gerror.FromError(err)
+	} else {
+		defer func() {
 			if err != nil {
 				if e := os.Remove(root); e != nil {
 					log.Printf("Encountered %q while recovering from %q", e, err)
 				}
 			}
-		}
+		}()
+	}
+
+	err = sc.BindMount(prototype, root, syscall.NO_FLAGS)
+	if err != nil {
+		err = gerror.FromError(err)
+	} else {
+		err = sc.BindMount(prototype, root, syscall.MS_RDONLY)
 
 		if err != nil {
-			if e := os.Remove(rwPath); e != nil {
+			err = gerror.FromError(err)
+			if e := sc.Unmount(root); e != nil {
 				log.Printf("Encountered %q while recovering from %q", e, err)
 			}
 		}
