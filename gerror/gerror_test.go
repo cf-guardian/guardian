@@ -61,3 +61,12 @@ func TestFromError(t *testing.T) {
 		t.Errorf("%q does not contain %q", actual, testMessage)
 	}
 }
+
+func TestFromNilError(t *testing.T) {
+
+	e := gerror.FromError(nil)
+
+	if e != nil {
+		t.Errorf("e was not nil: %q", e)
+	}
+}

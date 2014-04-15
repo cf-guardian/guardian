@@ -36,11 +36,15 @@ func New(message string) *err {
 }
 
 func FromError(cause error) *err {
-	var stack [stackSize]byte
+	if cause != nil {
+		var stack [stackSize]byte
 
-	n := runtime.Stack(stack[:], false)
+		n := runtime.Stack(stack[:], false)
 
-	return &err{"Error caused by: " + cause.Error(), stack[:n]}
+		return &err{"Error caused by: " + cause.Error(), stack[:n]}
+	} else {
+		return nil
+	}
 }
 
 type err struct {
