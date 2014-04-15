@@ -4,6 +4,24 @@
 
 Experiments to improve the testability of [garden](https://github.com/pivotal-cf-experimental/garden).
 
+## Objectives
+
+1. Understandability: the code should be clearly structured and documented so that a newcomer can understand the rationale and be able to propose changes.
+1. Robustness: the code should function correctly or fail with meaningful diagnostics.
+1. Maintainability: it should be straightforward to fix bugs and add new features.
+1. Testability: the runtime code should be thoroughly exercised by the tests.
+1. Portability: it should be straightforward to port the code to other Linux distributions.
+
+These objectives will be achieved through the following practices:
+
+1. Construct separately testable components with documented interfaces.
+1. Test each component including error paths.
+1. Keep runtime and test code separate.
+1. Fail rather than degrade function.
+1. Operating system dependencies should be isolated and carefully managed to simplify porting.
+1. Use pure Go for maintainability. Avoid scripting (even in Go) and C code.
+1. Instrument code to capture failure diagnostics including stack traces.
+
 ## Documentation
 
 Documentation is available at [godoc.org](http://godoc.org/github.com/cf-guardian/guardian).
