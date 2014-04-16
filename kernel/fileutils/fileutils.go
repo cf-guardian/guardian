@@ -50,12 +50,12 @@ func copyFile(destination string, source string) error {
 	}
 	defer sourceFile.Close()
 
-//	fi, err := os.Lstat(source)
-//	if err != nil {
-//		return gerror.FromError(err)
-//	}
+	fi, err := os.Lstat(source)
+	if err != nil {
+		return gerror.FromError(err)
+	}
 
-	destinationFile, err := os.Create(destination) // os.OpenFile(destination, os.O_CREATE + os.O_EXCL, fi.Mode())
+	destinationFile, err := os.OpenFile(destination, os.O_CREATE | os.O_EXCL | os.O_WRONLY, fi.Mode())
 	if err != nil {
 		return gerror.FromError(err)
 	}
