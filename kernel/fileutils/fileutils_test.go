@@ -41,6 +41,20 @@ func TestCopySingle(t *testing.T) {
 	checkFile(target, "test contents", t)
 }
 
+func TestCopyNonExistent(t *testing.T) {
+	td := createTmpDir()
+	defer os.RemoveAll(td)
+
+	badSrc := filepath.Join(td, "src.file")
+	target := filepath.Join(td, "target.file")
+	err := fileutils.Copy(target, badSrc)
+	if err == nil {
+		log.Printf("Type of err = %s; value = %v", reflect.TypeOf(err), err)
+		t.Errorf("Failed to return non-nil error")
+		return
+	}
+}
+
 func createFile(td string, fileName string) string {
 	fp := filepath.Join(td, fileName)
 	f, err := os.Create(fp)

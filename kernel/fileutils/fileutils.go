@@ -21,31 +21,17 @@ package fileutils
 
 import (
 	"io"
-	"log"
 	"os"
 	"github.com/cf-guardian/guardian/gerror"
 )
 
 func Copy(destPath string, srcPath string) error {
-	assertExists(srcPath)
-	err := copyFile(destPath, srcPath)
-	assertExists(destPath)
-	return err
-}
-
-func assertExists(f string) {
-	_, err := os.Stat(f)
-	if os.IsNotExist(err) {
-		panic(err)
-	}
+	return copyFile(destPath, srcPath)
 }
 
 func copyFile(destination string, source string) error {
-	log.Printf("copyFile(%s, %s)\n", destination, source)
-
 	sourceFile, err := os.OpenFile(source, os.O_RDONLY, 0666)
 	if err != nil {
-		log.Printf("copyFile(%s, %s) gave error %s\n", destination, source, err)
 		return gerror.FromError(err)
 	}
 	defer sourceFile.Close()
@@ -61,9 +47,6 @@ func copyFile(destination string, source string) error {
 	}
 	defer destinationFile.Close()
 
-	n, err := io.Copy(destinationFile, sourceFile)
-	gerr := gerror.FromError(err)
-	log.Printf("copyFile(%s, %s) copied %d bytes and returning %v -> %v\n", destination, source, n, err, gerr)
-
-	return gerr
+	_, err = io.Copy(destinationFile, sourceFile)
+	return gerror.FromError(err)
 }
