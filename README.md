@@ -2,7 +2,7 @@
 
 # Guardian
 
-Experiments to improve the testability of [garden](https://github.com/pivotal-cf-experimental/garden).
+Experiments to improve the testability of [warden](https://github.com/cloudfoundry-incubator/warden-linux).
 
 ## Objectives
 
