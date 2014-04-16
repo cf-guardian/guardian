@@ -35,7 +35,7 @@ func New(message string) *err {
 	return &err{message, stack[:]}
 }
 
-func FromError(cause error) *err {
+func FromError(cause error) error {
 	if cause != nil {
 		var stack [stackSize]byte
 
