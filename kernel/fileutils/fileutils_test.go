@@ -20,9 +20,7 @@ import (
 	"github.com/cf-guardian/guardian/kernel/fileutils"
 	"path/filepath"
 	"io/ioutil"
-	"log"
 	"os"
-	"reflect"
 	"testing"
 )
 
@@ -34,8 +32,7 @@ func TestCopySingle(t *testing.T) {
 	target := filepath.Join(td, "target.file")
 	err := fileutils.Copy(target, src)
 	if err != nil {
-		log.Printf("Type of err = %s; value = %v", reflect.TypeOf(err), err)
-		t.Errorf("Failed: %s %v", err, nil)
+		t.Errorf("Failed: %s", err)
 		return
 	}
 	checkFile(target, "test contents", t)
@@ -49,15 +46,38 @@ func TestCopyNonExistent(t *testing.T) {
 	target := filepath.Join(td, "target.file")
 	err := fileutils.Copy(target, badSrc)
 	if err == nil {
-		log.Printf("Type of err = %s; value = %v", reflect.TypeOf(err), err)
 		t.Errorf("Failed to return non-nil error")
 		return
 	}
 }
 
+func TestCopySingleMode(t *testing.T) {
+	td := createTmpDir()
+	defer os.RemoveAll(td)
+
+	src := createFileWithMode(td, "src.file", os.FileMode(0642))
+	target := filepath.Join(td, "target.file")
+	err := fileutils.Copy(target, src)
+	if err != nil {
+		t.Errorf("Failed: %s", err)
+		return
+	}
+	fi, err := os.Lstat(target)
+	check(err)
+	modeString := fi.Mode().String()
+	expModeString := "-rw-r-----"
+	if modeString != expModeString {
+		t.Errorf("Copied file has incorrect file mode %q, expected %q", modeString, expModeString)
+	}
+}
+
 func createFile(td string, fileName string) string {
+	return createFileWithMode(td, fileName, os.FileMode(0666))
+}
+
+func createFileWithMode(td string, fileName string, mode os.FileMode) string {
 	fp := filepath.Join(td, fileName)
-	f, err := os.Create(fp)
+	f, err := os.OpenFile(fp, os.O_CREATE | os.O_EXCL | os.O_WRONLY, mode)
 	check(err)
 	_, err = f.WriteString("test contents")
 	check(err)
