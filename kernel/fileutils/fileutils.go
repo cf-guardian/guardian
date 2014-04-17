@@ -27,8 +27,11 @@ import (
 
 /*
 	Copy copies a source file to a destination file. File contents are copied. File mode and permissions
-	(as described in http://golang.org/pkg/os/#FileMode) are copied too. The file owner is not currently
-	copied as this is OS-specific.
+	(as described in http://golang.org/pkg/os/#FileMode) are copied too.
+
+	TODO: copy directories
+	TODO: support symbolic links
+	TODO: copy file owner
  */
 func Copy(destPath string, srcPath string) error {
 	return copyFile(destPath, srcPath)
