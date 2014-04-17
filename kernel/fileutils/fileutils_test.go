@@ -18,13 +18,13 @@ package fileutils_test
 
 import (
 	"github.com/cf-guardian/guardian/kernel/fileutils"
-	"path/filepath"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
-func TestCopySingle(t *testing.T) {
+func TestCopyFile(t *testing.T) {
 	td := createTmpDir()
 	defer os.RemoveAll(td)
 
@@ -51,7 +51,7 @@ func TestCopyNonExistent(t *testing.T) {
 	}
 }
 
-func TestCopySingleMode(t *testing.T) {
+func TestCopyFileMode(t *testing.T) {
 	td := createTmpDir()
 	defer os.RemoveAll(td)
 
@@ -62,13 +62,110 @@ func TestCopySingleMode(t *testing.T) {
 		t.Errorf("Failed: %s", err)
 		return
 	}
-	fi, err := os.Lstat(target)
-	check(err)
-	modeString := fi.Mode().String()
+	modeString := fileMode(target).String()
 	expModeString := "-rw-r-----"
 	if modeString != expModeString {
 		t.Errorf("Copied file has incorrect file mode %q, expected %q", modeString, expModeString)
 	}
+}
+
+func TestCopyDirectoryToNew(t *testing.T) {
+	td := createTmpDir()
+	defer os.RemoveAll(td)
+
+	srcDir := filepath.Join(td, "source")
+	err := os.Mkdir(srcDir, os.FileMode(0777))
+	check(err)
+
+	createFile(srcDir, "file1")
+	createFile(srcDir, "file2")
+
+	targetDir := filepath.Join(td, "target")
+	err = fileutils.Copy(targetDir, srcDir)
+	if err != nil {
+		t.Errorf("Failed: %s", err)
+		return
+	}
+	checkDirectory(targetDir, t)
+	checkFile(filepath.Join(targetDir, "file1"), "test contents", t)
+	checkFile(filepath.Join(targetDir, "file2"), "test contents", t)
+}
+
+func TestCopyDirectoryNestedToNew(t *testing.T) {
+	td := createTmpDir()
+	defer os.RemoveAll(td)
+
+	srcDir := filepath.Join(td, "source")
+	err := os.Mkdir(srcDir, os.FileMode(0777))
+	check(err)
+
+	subDir := filepath.Join(srcDir, "subdir")
+	err = os.Mkdir(subDir, os.FileMode(0777))
+	check(err)
+
+	createFile(subDir, "file1")
+	createFile(subDir, "file2")
+
+	targetDir := filepath.Join(td, "target")
+	err = fileutils.Copy(targetDir, srcDir)
+	if err != nil {
+		t.Errorf("Failed: %s", err)
+		return
+	}
+	checkDirectory(targetDir, t)
+	checkFile(filepath.Join(targetDir, "subdir", "file1"), "test contents", t)
+	checkFile(filepath.Join(targetDir, "subdir", "file2"), "test contents", t)
+}
+
+func TestCopyDirectoryToExisting(t *testing.T) {
+	td := createTmpDir()
+	defer os.RemoveAll(td)
+
+	srcDir := filepath.Join(td, "source")
+	err := os.Mkdir(srcDir, os.FileMode(0777))
+	check(err)
+
+	createFile(srcDir, "file1")
+	createFile(srcDir, "file2")
+
+	targetDir := filepath.Join(td, "target")
+	err = os.Mkdir(targetDir, os.FileMode(0777))
+	check(err)
+	err = fileutils.Copy(targetDir, srcDir)
+	if err != nil {
+		t.Errorf("Failed: %s", err)
+		return
+	}
+
+	resultantDir := filepath.Join(targetDir, "source")
+	checkDirectory(resultantDir, t)
+	checkFile(filepath.Join(resultantDir, "file1"), "test contents", t)
+	checkFile(filepath.Join(resultantDir, "file2"), "test contents", t)
+}
+
+func TestCopyDirMode(t *testing.T) {
+	td := createTmpDir()
+	defer os.RemoveAll(td)
+
+	src := createDirWithMode(td, "src.dir", os.FileMode(0642))
+	target := filepath.Join(td, "target.dir")
+	err := fileutils.Copy(target, src)
+	if err != nil {
+		t.Errorf("Failed: %s", err)
+		return
+	}
+	modeString := fileMode(target).String()
+	expModeString := "drw-r-----"
+	if modeString != expModeString {
+		t.Errorf("Copied directory has incorrect file mode %q, expected %q", modeString, expModeString)
+	}
+}
+
+func createDirWithMode(td string, dirName string, mode os.FileMode) string {
+	fp := filepath.Join(td, dirName)
+	err := os.Mkdir(fp, mode)
+	check(err)
+	return fp
 }
 
 func createFile(td string, fileName string) string {
@@ -77,7 +174,7 @@ func createFile(td string, fileName string) string {
 
 func createFileWithMode(td string, fileName string, mode os.FileMode) string {
 	fp := filepath.Join(td, fileName)
-	f, err := os.OpenFile(fp, os.O_CREATE | os.O_EXCL | os.O_WRONLY, mode)
+	f, err := os.OpenFile(fp, os.O_CREATE|os.O_EXCL|os.O_WRONLY, mode)
 	check(err)
 	_, err = f.WriteString("test contents")
 	check(err)
@@ -97,7 +194,25 @@ func check(err error) {
 	}
 }
 
+func checkDirectory(path string, t *testing.T) {
+	defer func() {
+		if e := recover(); e != nil {
+			t.Errorf("Not a directory: %q (%v)", path, e)
+		}
+	}()
+
+	if !fileMode(path).IsDir() {
+		t.Errorf("Not a directory: %q", path)
+	}
+}
+
 func checkFile(target string, expContents string, t *testing.T) {
+	defer func() {
+		if e := recover(); e != nil {
+			t.Errorf("Problem with file: %q (%v)", target, e)
+		}
+	}()
+
 	f, err := os.Open(target)
 	check(err)
 	buf := make([]byte, len(expContents))
@@ -108,3 +223,8 @@ func checkFile(target string, expContents string, t *testing.T) {
 	}
 }
 
+func fileMode(path string) os.FileMode {
+	fi, err := os.Lstat(path)
+	check(err)
+	return fi.Mode()
+}
