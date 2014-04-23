@@ -76,18 +76,8 @@ func Generate(prototype string, sc syscall.Syscall) (root string, gerr error) {
 	}
 
 	if err == nil {
-		err = os.Mkdir("/tmp/guardian", defaultFileMode)
-
-		defer func(capture error) {
-			if capture == nil && err != nil {
-				e := os.RemoveAll("/tmp/guardian")
-				if e != nil {
-					log.Printf("Encountered %q while recovering from %q", e, gerr)
-				}
-			} else {
-				gerr = capture
-			}
-		}(gerror.FromError(err))
+		err = os.MkdirAll("/tmp/guardian", defaultFileMode)
+		gerr = gerror.FromError(err)
 	}
 
 	var rwPath string
@@ -147,6 +137,7 @@ func overlay(root string, rwPath string) error {
 			return gerr
 		}
 	}
+	return nil
 }
 
 func overlayDirectory(dir string, root string, rwPath string) error {
