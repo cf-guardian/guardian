@@ -52,6 +52,14 @@ beginning of a new environment variable called `GOPATH`. You might want to put t
 
 4. Change directory to `<workspace dir>/src/github.com/cf-guardian/guardian`.
 
+5. Install the pre-commit hook as follows:
+    ```
+    cd .git/hooks
+    ln -s ../../development/pre-commit-hook/pre-commit .
+    ```
+
+    After installing the hook, if you need to skip reformatting for a particular commit, use `git commit --no-verify`.
+
 ## Testing
 
 Issue:
@@ -69,6 +77,9 @@ Source code is formatted according to standard Go conventions. To re-format the 
 ```
 go fmt ./...
 ```
+
+To reformat code before committing it to git, install the pre-commit hook as described above.
+
 
 Also, you can [lint](http://go-lint.appspot.com/github.com/cf-guardian/guardian) the code if you like.
 
