@@ -51,6 +51,19 @@ func TestCopyNonExistent(t *testing.T) {
 	}
 }
 
+func TestCopySameFile(t *testing.T) {
+	td := createTmpDir()
+	defer os.RemoveAll(td)
+
+	src := createFile(td, "src.file")
+	err := fileutils.Copy(src, src)
+	if err != nil {
+		t.Errorf("Failed: %s", err)
+		return
+	}
+	checkFile(src, "test contents", t)
+}
+
 func TestCopyFileMode(t *testing.T) {
 	td := createTmpDir()
 	defer os.RemoveAll(td)

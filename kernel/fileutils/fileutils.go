@@ -36,6 +36,9 @@ import (
 */
 func Copy(destPath string, srcPath string) error {
 	glog.Infof("Copy(%s, %s)", destPath, srcPath)
+	if sameFile(srcPath, destPath) {
+		return nil
+	}
 	srcMode, gerr := fileMode(srcPath)
 	if gerr != nil {
 		return gerr
@@ -131,4 +134,15 @@ func fileMode(path string) (os.FileMode, error) {
 		return os.FileMode(0), gerror.FromError(err)
 	}
 	return fi.Mode(), nil
+}
+
+func sameFile(srcPath string, destPath string) bool {
+	srcFi, err := os.Stat(srcPath)
+	if err == nil {
+		destFi, err := os.Stat(destPath)
+		if err == nil {
+			return os.SameFile(srcFi, destFi)
+		}
+	}
+	return false
 }
