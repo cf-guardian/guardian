@@ -52,7 +52,7 @@ beginning of a new environment variable called `GOPATH`. You might want to put t
 
 4. Change directory to `<workspace dir>/src/github.com/cf-guardian/guardian`.
 
-5. Install the pre-commit hook as follows:
+5. Install the [pre-commit hook](https://github.com/jbrukh/git-gofmt) as follows:
     ```
     cd .git/hooks
     ln -s ../../development/pre-commit-hook/pre-commit .
