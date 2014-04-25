@@ -174,6 +174,214 @@ func TestCopyDirMode(t *testing.T) {
 	}
 }
 
+func TestCopyDirInternalSymlink(t *testing.T) {
+	td := createTmpDir()
+	defer os.RemoveAll(td)
+
+	/*
+	   Create a directory structure inside td like this:
+
+	    source/ <------+
+	        file1      |
+	        dir1/      |
+	            link --+
+
+	*/
+
+	srcDir := createDir(td, "source")
+
+	createFile(srcDir, "file1")
+	dir1 := createDir(srcDir, "dir1")
+
+	srcLink := filepath.Join(dir1, "link")
+	err := os.Symlink(srcDir, srcLink)
+	check(err)
+
+	targetDir := filepath.Join(td, "target")
+	err = fileutils.Copy(targetDir, srcDir)
+	if err != nil {
+		t.Errorf("Failed: %s", err)
+		return
+	}
+
+	targetDir1 := filepath.Join(targetDir, "dir1")
+	targetLink := filepath.Join(targetDir1, "link")
+
+	linkTarget, err := os.Readlink(targetLink)
+	check(err)
+	const expectedLinkTarget = ".."
+	if linkTarget != expectedLinkTarget {
+		t.Errorf("Unexpected value of symlink %s, expected %s", linkTarget, expectedLinkTarget)
+		return
+	}
+
+	if !sameFile(targetDir, filepath.Join(targetDir1, linkTarget)) {
+		t.Errorf("Symlink %s does not point to expected file %s", targetLink, targetDir)
+		return
+	}
+}
+
+func TestCopyDirInternalFileSymlink(t *testing.T) {
+	td := createTmpDir()
+	defer os.RemoveAll(td)
+
+	/*
+	   Create a directory structure inside td like this:
+
+	    source/ <------+
+	        file1      |
+	        link ------+
+
+	*/
+
+	srcDir := createDir(td, "source")
+
+	file1 := createFile(srcDir, "file1")
+	fileLink := filepath.Join(srcDir, "link")
+	err := os.Symlink(file1, fileLink)
+	check(err)
+
+	targetDir := filepath.Join(td, "target")
+	err = fileutils.Copy(targetDir, srcDir)
+	if err != nil {
+		t.Errorf("Failed: %s", err)
+		return
+	}
+
+	targetFile1 := filepath.Join(targetDir, "file1")
+	targetLink := filepath.Join(targetDir, "link")
+
+	linkTarget, err := os.Readlink(targetLink)
+	check(err)
+	const expectedLinkTarget = "file1"
+	if linkTarget != expectedLinkTarget {
+		t.Errorf("Unexpected value of symlink %s, expected %s", linkTarget, expectedLinkTarget)
+		return
+	}
+
+	if !sameFile(targetFile1, filepath.Join(targetDir, linkTarget)) {
+		t.Errorf("Symlink %s does not point to expected file %s", targetLink, targetFile1)
+		return
+	}
+}
+
+func TestCopyDirExternalSymlink(t *testing.T) {
+	td := createTmpDir()
+	defer os.RemoveAll(td)
+
+	/*
+	   Create a directory structure inside td like this:
+
+	    source/
+	          link ----> td
+
+	*/
+
+	srcDir := createDir(td, "source")
+
+	tdLink := filepath.Join(srcDir, "link")
+	err := os.Symlink(td, tdLink)
+	check(err)
+
+	targetDir := filepath.Join(td, "target")
+	err = fileutils.Copy(targetDir, srcDir)
+	if err == nil {
+		t.Errorf("Failed: should not have succeeded in copying external symbolic link", err)
+		return
+	}
+}
+
+func TestCopyDirInternalRelativeSymlink(t *testing.T) {
+	td := createTmpDir()
+	defer os.RemoveAll(td)
+
+	/*
+	   Create a directory structure inside td like this:
+
+	    source/    <---+
+	                   | (internal, but via ../source)
+	          link ----+
+
+	*/
+
+	srcDir := createDir(td, "source")
+
+	tdLink := filepath.Join(srcDir, "link")
+	err := os.Symlink("../source", tdLink)
+	check(err)
+
+	targetDir := filepath.Join(td, "target")
+	err = fileutils.Copy(targetDir, srcDir)
+	if err != nil {
+		t.Errorf("Failed: %s", err)
+		return
+	}
+}
+
+func TestCopyDirExternalRelativeSymlink(t *testing.T) {
+	td := createTmpDir()
+	defer os.RemoveAll(td)
+
+	/*
+	   Create a directory structure inside td like this:
+
+	    a/             <---+
+	        source/        |
+	                       | (external via ..)
+	              link ----+
+
+	*/
+
+	aDir := createDir(td, "a")
+	srcDir := createDir(aDir, "source")
+
+	tdLink := filepath.Join(srcDir, "link")
+	err := os.Symlink("..", tdLink)
+	check(err)
+
+	targetDir := filepath.Join(td, "target")
+	err = fileutils.Copy(targetDir, srcDir)
+	if err == nil {
+		t.Errorf("Failed: should not have external relative symbolic link")
+		return
+	}
+}
+
+func TestCopyFileSymlink(t *testing.T) {
+	td := createTmpDir()
+	defer os.RemoveAll(td)
+
+	src := createFile(td, "src.file")
+	link := filepath.Join(td, "link")
+	err := os.Symlink(src, link)
+	check(err)
+	target := filepath.Join(td, "target.file")
+	err = fileutils.Copy(target, link)
+	if err == nil {
+		t.Errorf("Failed: should not have succeeded in copying external symbolic link")
+		return
+	}
+}
+
+func TestCopyFileSameSymlink(t *testing.T) {
+	td := createTmpDir()
+	defer os.RemoveAll(td)
+
+	src := createFile(td, "src.file")
+	link := filepath.Join(td, "link")
+	err := os.Symlink(src, link)
+	check(err)
+	err = fileutils.Copy(link, link)
+	if err != nil {
+		t.Errorf("Failed: %s", err)
+		return
+	}
+}
+
+func createDir(td string, dirName string) string {
+	return createDirWithMode(td, dirName, os.FileMode(0777))
+}
+
 func createDirWithMode(td string, dirName string, mode os.FileMode) string {
 	fp := filepath.Join(td, dirName)
 	err := os.Mkdir(fp, mode)
@@ -208,24 +416,12 @@ func check(err error) {
 }
 
 func checkDirectory(path string, t *testing.T) {
-	defer func() {
-		if e := recover(); e != nil {
-			t.Errorf("Not a directory: %q (%v)", path, e)
-		}
-	}()
-
 	if !fileMode(path).IsDir() {
 		t.Errorf("Not a directory: %q", path)
 	}
 }
 
 func checkFile(target string, expContents string, t *testing.T) {
-	defer func() {
-		if e := recover(); e != nil {
-			t.Errorf("Problem with file: %q (%v)", target, e)
-		}
-	}()
-
 	f, err := os.Open(target)
 	check(err)
 	buf := make([]byte, len(expContents))
@@ -240,4 +436,12 @@ func fileMode(path string) os.FileMode {
 	fi, err := os.Lstat(path)
 	check(err)
 	return fi.Mode()
+}
+
+func sameFile(p1 string, p2 string) bool {
+	fi1, err := os.Stat(p1)
+	check(err)
+	fi2, err := os.Stat(p2)
+	check(err)
+	return os.SameFile(fi1, fi2)
 }

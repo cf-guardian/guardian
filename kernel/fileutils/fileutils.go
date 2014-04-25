@@ -25,17 +25,27 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 /*
 	Copy copies a source file to a destination file. File contents are copied. File mode and permissions
-	(as described in http://golang.org/pkg/os/#FileMode) are copied too.
+	(as described in http://golang.org/pkg/os/#FileMode) are copied.
 
-	TODO: support symbolic links
-	TODO: copy file owner
+	Directories are copied, along with their contents.
+
+	Copying a file or directory to itself succeeds but does not modify the filesystem.
+
+	Symbolic links are not followed and are copied provided they refer to a file or directory being copied
+	(otherwise a non-nil error is returned). The only exception is copying a symbolic link to itself, which
+	always succeeds.
 */
 func Copy(destPath string, srcPath string) error {
 	glog.Infof("Copy(%s, %s)", destPath, srcPath)
+	return doCopy(destPath, srcPath, srcPath)
+}
+
+func doCopy(destPath string, srcPath string, topSrcPath string) error {
 	if sameFile(srcPath, destPath) {
 		return nil
 	}
@@ -44,14 +54,16 @@ func Copy(destPath string, srcPath string) error {
 		return gerr
 	}
 
-	if srcMode.IsDir() {
-		return copyDir(destPath, srcPath)
+	if srcMode&os.ModeSymlink == os.ModeSymlink {
+		return copySymlink(destPath, srcPath, topSrcPath)
+	} else if srcMode.IsDir() {
+		return copyDir(destPath, srcPath, topSrcPath)
 	} else {
 		return copyFile(destPath, srcPath)
 	}
 }
 
-func copyDir(destination string, source string) error {
+func copyDir(destination string, source string, topSource string) error {
 	glog.Infof("copyDir(%s, %s)", destination, source)
 	finalDestination, err := finalDestinationDir(destination, source)
 	if err != nil {
@@ -69,7 +81,7 @@ func copyDir(destination string, source string) error {
 
 	for _, name := range names {
 		glog.Infof("copying %s from %s to %s", name, source, finalDestination)
-		err = Copy(filepath.Join(finalDestination, name), filepath.Join(source, name))
+		err = doCopy(filepath.Join(finalDestination, name), filepath.Join(source, name), topSource)
 		if err != nil {
 			return gerror.FromError(err)
 		}
@@ -126,6 +138,41 @@ func copyFile(destination string, source string) error {
 
 	_, err = io.Copy(destinationFile, sourceFile)
 	return gerror.FromError(err)
+}
+
+func copySymlink(destLinkPath string, srcLinkPath string, topSrcPath string) error {
+	glog.Infof("copySymLink(%s, %s, %s)", destLinkPath, srcLinkPath, topSrcPath)
+	linkTarget, err := os.Readlink(srcLinkPath)
+	if err != nil {
+		return gerror.FromError(err)
+	}
+
+	// Ensure linkTarget is absolute
+	if strings.HasPrefix(linkTarget, "..") {
+		linkTarget = filepath.Join(filepath.Dir(srcLinkPath), linkTarget)
+	}
+
+	// check link does not point outside any directory being copied
+	topRelativePath, err := filepath.Rel(topSrcPath, linkTarget)
+	if err != nil {
+		return gerror.FromError(err)
+	}
+	if strings.HasPrefix(topRelativePath, "..") {
+		return gerror.Newf("cannot copy symbolic link %s with target %s which points outside the file or directory being copied %s", srcLinkPath, linkTarget, topSrcPath)
+	}
+
+	linkParent := filepath.Dir(srcLinkPath)
+	relativePath, err := filepath.Rel(linkParent, linkTarget)
+	if err != nil {
+		return gerror.FromError(err)
+	}
+	glog.Infof("symbolic link %s has target %s which has path %s relative to %s (directory containing link)", srcLinkPath, linkTarget, relativePath, linkParent)
+	err = os.Symlink(relativePath, destLinkPath)
+	if err != nil {
+		return gerror.FromError(err)
+	}
+	glog.Infof("symbolically linked %s to %s", destLinkPath, relativePath)
+	return nil
 }
 
 func fileMode(path string) (os.FileMode, error) {

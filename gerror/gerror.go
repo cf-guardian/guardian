@@ -21,6 +21,7 @@ at construction time.
 package gerror
 
 import (
+	"fmt"
 	"runtime"
 )
 
@@ -33,6 +34,10 @@ func New(message string) *err {
 	runtime.Stack(stack[:], false)
 
 	return &err{message, stack[:]}
+}
+
+func Newf(format string, insert ...interface{}) *err {
+	return New(fmt.Sprintf(format, insert...))
 }
 
 func FromError(cause error) error {

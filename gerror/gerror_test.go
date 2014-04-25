@@ -49,6 +49,18 @@ func TestStackTraceCapture(t *testing.T) {
 	}
 }
 
+func TestFormatCapture(t *testing.T) {
+
+	e := gerror.Newf("message with %s", "insert")
+
+	actual := e.Error()
+
+	expected := "message with insert"
+	if !strings.Contains(actual, expected) {
+		t.Errorf("%q does not contain %q", actual, expected)
+	}
+}
+
 func TestFromError(t *testing.T) {
 
 	cause := errors.New(testMessage)
