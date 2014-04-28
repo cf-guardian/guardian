@@ -28,6 +28,22 @@ Documentation is available at [godoc.org](http://godoc.org/github.com/cf-guardia
 
 If this hasn't been refreshed for a while, feel free to click the "Refresh now" link.
 
+## Diagnostics
+
+### Errors
+
+Errors returned from Guardian functions and methods include stack traces so that the point of failure can easily be determined. The [gerror](gerror) package is used to construct errors.
+
+### Logging
+
+Logging is performed using the [glog](https://github.com/golang/glog) package (an external dependency). Logs may be directed to standard error by setting the flag `logtostderr` to `true` on the go invocation, as in this example:
+
+````
+go test -logtostderr=true
+````
+See the [glog documentation](http://godoc.org/github.com/golang/glog) for further information.
+
+
 ## Development Environment Setup
 
 1. Ensure the following pre-requisites are installed:
