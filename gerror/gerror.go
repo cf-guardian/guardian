@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /*
-Package gerror provides an improved error type which captures the stack trace
+Package gerror provides an improved error type which captures an error tag and the stack trace
 at construction time.
 */
 package gerror
