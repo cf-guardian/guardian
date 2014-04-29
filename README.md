@@ -76,6 +76,17 @@ beginning of a new environment variable called `GOPATH`. You might want to put t
 
     After installing the hook, if you need to skip reformatting for a particular commit, use `git commit --no-verify`.
 
+### Development scripts
+
+The directory `development/scripts` is there for simple (bash) shell scripts that may make life a little easier in our context.
+
+The only one currently implemented is called `gosub`, designed to run a `go` command in all subdirectories of the current directory that
+have a `*.go` file in them. Typical usage is `gosub build`, or `gosub fmt build`. This saves being driven by a top-level `go` package with
+explicit dependencies.
+
+`gosub` is limited to single word go commands. `gosub fmt build` would issue `go fmt; go build` in each directory in turn.
+`gosub test` is quite useful to run all tests in immediate subdirectories.
+
 ## Testing
 
 Issue:

@@ -1,0 +1,39 @@
+#!/bin/bash
+## Issue go &1, go &2, ... in subdirectories
+
+# Set up local vars
+my_dir=`pwd`
+go=`which go`
+cmds=$*
+
+if [[ -z $cmds || $cmds == "?" || $cmds == "help" || $cmds == "-help" || $cmds == "--help" ]] ; then
+    echo "No commands supplied."
+    echo ""
+    echo "gosub: Go commands in subdirectories"
+    echo "   e.g."
+    echo "      gosub fmt build test"
+    echo "   will run (go fmt; go build; go test) in each subdirectory"
+    echo "   of the current directory which has a *.go file in it."
+    exit 1
+fi
+
+echo "gosub: Go $cmds in subdirectories"
+
+for file in $(ls)
+do
+    if [[ -d "$file" ]] ; then
+        subDir=$file
+        go_files=`ls $subDir/*.go 2>/dev/null`
+        if [[ -n $go_files ]] ; then
+            echo
+            echo '-----------------------------------------------------'
+            echo "===== in '$subDir'"
+            for cmd in $cmds
+            do
+                echo "   go $cmd"
+                ( cd $subDir; $go $cmd )
+            done
+            echo '-----------------------------------------------------'
+        fi
+    fi
+done
