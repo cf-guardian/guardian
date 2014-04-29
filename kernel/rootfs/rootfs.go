@@ -26,6 +26,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"github.com/cf-guardian/guardian/kernel/fileutils"
 )
 
 type ErrorId int
@@ -34,6 +35,7 @@ const (
 	ErrCreateTempDir ErrorId = iota
 	ErrGetTempDirName
 	ErrBindMountRoot
+	ErrBindMountSubdir
 	ErrOverlayTempDir
 )
 
@@ -153,23 +155,20 @@ func overlayDirectory(dir string, root string, rwPath string) error {
 	dirPath := filepath.Join(rwPath, dir)
 	mntPath := filepath.Join(root, dir)
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
-		if _, err := os.Stat(mntPath); os.IsExist(err) {
+		if _, err = os.Stat(mntPath); os.IsExist(err) {
+			err = fileutils.Copy(dirPath, mntPath)
 
-			// TODO: abstract a recursive copy function out of the following...
-			// TODO: need to copy file permissions and attributes
-			var walk = func(path string, info os.FileInfo, err error) error {
-				if err != nil {
-					if info.IsDir() {
-						return filepath.SkipDir
-					} else {
-						return err
-					}
-				}
-				// TODO: mntPath is a prefix of path. Need to add same suffix to dirPath and then call copyFile
-				return nil
-			}
-			err = filepath.Walk(mntPath, filepath.WalkFunc(walk))
+		} else {
+			err = os.MkdirAll(dirPath, tempDirMode)
 		}
+		if err != nil {
+			return err
+		}
+	}
+
+	err := sc.BindMount(dirPath, mntPath, sc.No_FLAGS)
+	if err != nil {
+		return gerror.NewFromError(ErrBindMountSubdir, err)
 	}
 	return nil
 }
