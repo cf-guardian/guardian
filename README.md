@@ -1,4 +1,4 @@
-[![GoDoc](https://godoc.org/github.com/cf-guardian/guardian/kernel?status.png)](https://godoc.org/github.com/cf-guardian/guardian/kernel)
+[![GoDoc](https://godoc.org/github.com/cf-guardian/guardian/kernel?status.png)](https://godoc.org/github.com/cf-guardian/guardian)
 
 # Guardian
 
