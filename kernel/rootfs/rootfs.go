@@ -20,12 +20,12 @@ Package rootfs encapsulates the container's root filesystem.
 package rootfs
 
 import (
+	"github.com/cf-guardian/guardian/gerror"
+	"github.com/cf-guardian/guardian/kernel/syscall"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
-	"github.com/cf-guardian/guardian/kernel/syscall"
-	"github.com/cf-guardian/guardian/gerror"
 )
 
 const defaultFileMode os.FileMode = 0700
@@ -34,7 +34,7 @@ const tempDirMode os.FileMode = 0777
 /*
 	Generate produces a usable root filesystem instance from a
 	"prototype" root filesystem.
-	
+
 	The input parameter `prototype` is the path of the prototype,
 	which may be any filesystem directory. Generate does not modify
 	the prototype.
@@ -47,9 +47,9 @@ const tempDirMode os.FileMode = 0777
 	and the prototype. TODO: decide which of these to support.
 
 	TODO: must this function be called under root?
-	
+
 	If Generate fails, it has no side-effects.
-	
+
 	The return values are the path of the generated root filesystem
 	and an error. The error is `nil` if and only if Generate was
 	successful.
@@ -77,7 +77,7 @@ func Generate(prototype string, sc syscall.Syscall) (root string, gerr error) {
 
 	if err == nil {
 		err = os.MkdirAll("/tmp/guardian", defaultFileMode)
-		gerr = gerror.FromError(err)
+		gerr = gerror.NewFromError(err)
 	}
 
 	var rwPath string
@@ -89,7 +89,7 @@ func Generate(prototype string, sc syscall.Syscall) (root string, gerr error) {
 				log.Printf("Encountered %q while recovering from %q", e, gerr)
 			}
 		}
-		defer cleanup(gerror.FromError(err), undo)
+		defer cleanup(gerror.NewFromError(err), undo)
 	}
 
 	if err == nil {
@@ -99,7 +99,7 @@ func Generate(prototype string, sc syscall.Syscall) (root string, gerr error) {
 				log.Printf("Encountered %q while recovering from %q", e, gerr)
 			}
 		}
-		defer cleanup(gerror.FromError(err), undo)
+		defer cleanup(gerror.NewFromError(err), undo)
 	}
 
 	if err == nil {
@@ -109,12 +109,12 @@ func Generate(prototype string, sc syscall.Syscall) (root string, gerr error) {
 				log.Printf("Encountered %q while recovering from %q", e, gerr)
 			}
 		}
-		defer cleanup(gerror.FromError(err), undo)
+		defer cleanup(gerror.NewFromError(err), undo)
 	}
 
 	if err == nil {
 		err = sc.BindMount(prototype, root, syscall.MS_RDONLY)
-		gerr = gerror.FromError(err)
+		gerr = gerror.NewFromError(err)
 	}
 
 	if err == nil {
@@ -125,11 +125,11 @@ func Generate(prototype string, sc syscall.Syscall) (root string, gerr error) {
 }
 
 func overlay(root string, rwPath string) error {
-	dirs := []string{ `proc`, `dev`, `etc`, `home`, `sbin`, `var`, `tmp` }
+	dirs := []string{`proc`, `dev`, `etc`, `home`, `sbin`, `var`, `tmp`}
 
 	tmpDir := filepath.Join(rwPath, `tmp`)
 	if err := os.Mkdir(tmpDir, tempDirMode); err != nil {
-		return gerror.FromError(err)
+		return gerror.NewFromError(err)
 	}
 
 	for _, dir := range dirs {

@@ -68,11 +68,11 @@ func TestFormatCapture(t *testing.T) {
 	}
 }
 
-func TestFromError(t *testing.T) {
+func TestNewFromError(t *testing.T) {
 
 	cause := errors.New(testMessage)
 
-	e := gerror.FromError(BasicError, cause)
+	e := gerror.NewFromError(BasicError, cause)
 
 	actual := e.Error()
 
@@ -81,9 +81,9 @@ func TestFromError(t *testing.T) {
 	}
 }
 
-func TestFromNilError(t *testing.T) {
+func TestNewFromErrorNil(t *testing.T) {
 
-	e := gerror.FromError(BasicError, nil)
+	e := gerror.NewFromError(BasicError, nil)
 
 	if e != nil {
 		t.Errorf("e was not nil: %q", e)

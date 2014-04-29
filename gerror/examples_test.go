@@ -37,11 +37,12 @@ func ExampleNewf(portNum int) error {
 	return gerror.Newf(ErrInvalidPort, "Invalid port: %d", portNum)
 }
 
-func ExampleFromError(filePath string) (file os.File, err error) {
+func ExampleNewFromError(filePath string) (file *os.File, err error) {
 	file, err = os.Open(filePath)
 	if err != nil {
-		return nil, gerror.FromError(ErrInvalidPath, err)
+		return file, gerror.NewFromError(ErrInvalidPath, err)
 	}
+	return file, nil
 }
 
 func ExampleGerror_EqualTag() {

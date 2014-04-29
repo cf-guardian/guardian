@@ -87,12 +87,12 @@ func copyDir(destination string, source string, topSource string) gerror.Gerror 
 	}
 	src, err := os.Open(source)
 	if err != nil {
-		return gerror.FromError(ErrOpeningSourceDir, err)
+		return gerror.NewFromError(ErrOpeningSourceDir, err)
 	}
 
 	names, err := src.Readdirnames(-1)
 	if err != nil {
-		return gerror.FromError(ErrCannotListSourceDir, err)
+		return gerror.NewFromError(ErrCannotListSourceDir, err)
 	}
 
 	for _, name := range names {
@@ -119,7 +119,7 @@ func finalDestinationDir(destination string, source string) (finalDestination st
 	}
 	if _, err := os.Stat(destination); err != nil {
 		if !os.IsNotExist(err) {
-			return finalDestination, gerror.FromError(ErrUnexpected, err)
+			return finalDestination, gerror.NewFromError(ErrUnexpected, err)
 		}
 		finalDestination = destination
 	} else {
@@ -127,7 +127,7 @@ func finalDestinationDir(destination string, source string) (finalDestination st
 	}
 	if err := os.MkdirAll(finalDestination, sourceMode); err != nil {
 		finalDestination = ""
-		return finalDestination, gerror.FromError(ErrCreatingTargetDir, err)
+		return finalDestination, gerror.NewFromError(ErrCreatingTargetDir, err)
 	}
 	return finalDestination, nil
 }
@@ -136,7 +136,7 @@ func copyFile(destination string, source string) gerror.Gerror {
 	glog.Infof("copyFile(%s, %s)", destination, source)
 	sourceFile, err := os.OpenFile(source, os.O_RDONLY, 0666)
 	if err != nil {
-		return gerror.FromError(ErrOpeningSourceFile, err)
+		return gerror.NewFromError(ErrOpeningSourceFile, err)
 	}
 	defer sourceFile.Close()
 
@@ -147,19 +147,19 @@ func copyFile(destination string, source string) gerror.Gerror {
 
 	destinationFile, err := os.OpenFile(destination, os.O_CREATE|os.O_EXCL|os.O_WRONLY, mode)
 	if err != nil {
-		return gerror.FromError(ErrOpeningTargetFile, err)
+		return gerror.NewFromError(ErrOpeningTargetFile, err)
 	}
 	defer destinationFile.Close()
 
 	_, err = io.Copy(destinationFile, sourceFile)
-	return gerror.FromError(ErrCopyingFile, err)
+	return gerror.NewFromError(ErrCopyingFile, err)
 }
 
 func copySymlink(destLinkPath string, srcLinkPath string, topSrcPath string) gerror.Gerror {
 	glog.Infof("copySymLink(%s, %s, %s)", destLinkPath, srcLinkPath, topSrcPath)
 	linkTarget, err := os.Readlink(srcLinkPath)
 	if err != nil {
-		return gerror.FromError(ErrReadingSourceSymlink, err)
+		return gerror.NewFromError(ErrReadingSourceSymlink, err)
 	}
 
 	// Ensure linkTarget is absolute
@@ -170,7 +170,7 @@ func copySymlink(destLinkPath string, srcLinkPath string, topSrcPath string) ger
 	// check link does not point outside any directory being copied
 	topRelativePath, err := filepath.Rel(topSrcPath, linkTarget)
 	if err != nil {
-		return gerror.FromError(ErrUnexpected, err)
+		return gerror.NewFromError(ErrUnexpected, err)
 	}
 	if strings.HasPrefix(topRelativePath, "..") {
 		return gerror.Newf(ErrExternalSymlink, "cannot copy symbolic link %s with target %s which points outside the file or directory being copied %s", srcLinkPath, linkTarget, topSrcPath)
@@ -179,12 +179,12 @@ func copySymlink(destLinkPath string, srcLinkPath string, topSrcPath string) ger
 	linkParent := filepath.Dir(srcLinkPath)
 	relativePath, err := filepath.Rel(linkParent, linkTarget)
 	if err != nil {
-		return gerror.FromError(ErrUnexpected, err)
+		return gerror.NewFromError(ErrUnexpected, err)
 	}
 	glog.Infof("symbolic link %s has target %s which has path %s relative to %s (directory containing link)", srcLinkPath, linkTarget, relativePath, linkParent)
 	err = os.Symlink(relativePath, destLinkPath)
 	if err != nil {
-		return gerror.FromError(ErrWritingTargetSymlink, err)
+		return gerror.NewFromError(ErrWritingTargetSymlink, err)
 	}
 	glog.Infof("symbolically linked %s to %s", destLinkPath, relativePath)
 	return nil
@@ -193,7 +193,7 @@ func copySymlink(destLinkPath string, srcLinkPath string, topSrcPath string) ger
 func fileMode(path string) (os.FileMode, gerror.Gerror) {
 	fi, err := os.Lstat(path)
 	if err != nil {
-		return os.FileMode(0), gerror.FromError(ErrFileNotFound, err)
+		return os.FileMode(0), gerror.NewFromError(ErrFileNotFound, err)
 	}
 	return fi.Mode(), nil
 }

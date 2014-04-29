@@ -61,7 +61,7 @@ func Newf(tag Tag, format string, insert ...interface{}) Gerror {
 }
 
 // Return an error containing the given tag, the cause of the error, and the current stack trace.
-func FromError(tag Tag, cause error) Gerror {
+func NewFromError(tag Tag, cause error) Gerror {
 	if cause != nil {
 		var stack [stackSize]byte
 
