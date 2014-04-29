@@ -28,6 +28,15 @@ import (
 	"path/filepath"
 )
 
+type ErrorId int
+
+const (
+	ErrCreateTempDir ErrorId = iota
+	ErrGetTempDirName
+	ErrBindMountRoot
+	ErrOverlayTempDir
+)
+
 const defaultFileMode os.FileMode = 0700
 const tempDirMode os.FileMode = 0777
 
@@ -77,7 +86,7 @@ func Generate(prototype string, sc syscall.Syscall) (root string, gerr error) {
 
 	if err == nil {
 		err = os.MkdirAll("/tmp/guardian", defaultFileMode)
-		gerr = gerror.NewFromError(err)
+		gerr = gerror.NewFromError(ErrCreateTempDir, err)
 	}
 
 	var rwPath string
@@ -89,7 +98,7 @@ func Generate(prototype string, sc syscall.Syscall) (root string, gerr error) {
 				log.Printf("Encountered %q while recovering from %q", e, gerr)
 			}
 		}
-		defer cleanup(gerror.NewFromError(err), undo)
+		defer cleanup(gerror.NewFromError(ErrGetTempDirName, err), undo)
 	}
 
 	if err == nil {
@@ -99,7 +108,7 @@ func Generate(prototype string, sc syscall.Syscall) (root string, gerr error) {
 				log.Printf("Encountered %q while recovering from %q", e, gerr)
 			}
 		}
-		defer cleanup(gerror.NewFromError(err), undo)
+		defer cleanup(gerror.NewFromError(ErrGetTempDirName, err), undo)
 	}
 
 	if err == nil {
@@ -109,12 +118,12 @@ func Generate(prototype string, sc syscall.Syscall) (root string, gerr error) {
 				log.Printf("Encountered %q while recovering from %q", e, gerr)
 			}
 		}
-		defer cleanup(gerror.NewFromError(err), undo)
+		defer cleanup(gerror.NewFromError(ErrBindMountRoot, err), undo)
 	}
 
 	if err == nil {
 		err = sc.BindMount(prototype, root, syscall.MS_RDONLY)
-		gerr = gerror.NewFromError(err)
+		gerr = gerror.NewFromError(ErrBindMountRoot, err)
 	}
 
 	if err == nil {
@@ -129,7 +138,7 @@ func overlay(root string, rwPath string) error {
 
 	tmpDir := filepath.Join(rwPath, `tmp`)
 	if err := os.Mkdir(tmpDir, tempDirMode); err != nil {
-		return gerror.NewFromError(err)
+		return gerror.NewFromError(ErrOverlayTempDir, err)
 	}
 
 	for _, dir := range dirs {
