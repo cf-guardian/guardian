@@ -24,6 +24,12 @@ import (
 	"testing"
 )
 
+func TestErrorIds(t *testing.T) {
+	if fileutils.ErrOpeningSourceDir == fileutils.ErrFileNotFound {
+		t.Error("Errors are not distinct")
+	}
+}
+
 func TestCopyFile(t *testing.T) {
 	td := createTmpDir()
 	defer os.RemoveAll(td)
@@ -45,8 +51,8 @@ func TestCopyNonExistent(t *testing.T) {
 	badSrc := filepath.Join(td, "src.file")
 	target := filepath.Join(td, "target.file")
 	err := fileutils.Copy(target, badSrc)
-	if err == nil {
-		t.Errorf("Failed to return non-nil error")
+	if !err.EqualTag(fileutils.ErrFileNotFound) {
+		t.Errorf("Unexpected error %v", err)
 		return
 	}
 }

@@ -25,9 +25,16 @@ import (
 
 const testMessage = "test message"
 
+type TestTag int
+
+const (
+	BasicError TestTag = iota
+	AnotherError
+)
+
 func TestMessageCapture(t *testing.T) {
 
-	e := gerror.New(testMessage)
+	e := gerror.New(BasicError, testMessage)
 
 	actual := e.Error()
 
@@ -40,7 +47,7 @@ func TestStackTraceCapture(t *testing.T) {
 
 	const stackPortion = "error_test.TestStackTraceCapture"
 
-	e := gerror.New(testMessage)
+	e := gerror.New(BasicError, testMessage)
 
 	actual := e.Error()
 
@@ -51,7 +58,7 @@ func TestStackTraceCapture(t *testing.T) {
 
 func TestFormatCapture(t *testing.T) {
 
-	e := gerror.Newf("message with %s", "insert")
+	e := gerror.Newf(BasicError, "message with %s", "insert")
 
 	actual := e.Error()
 
@@ -65,7 +72,7 @@ func TestFromError(t *testing.T) {
 
 	cause := errors.New(testMessage)
 
-	e := gerror.FromError(cause)
+	e := gerror.FromError(BasicError, cause)
 
 	actual := e.Error()
 
@@ -76,9 +83,52 @@ func TestFromError(t *testing.T) {
 
 func TestFromNilError(t *testing.T) {
 
-	e := gerror.FromError(nil)
+	e := gerror.FromError(BasicError, nil)
 
 	if e != nil {
 		t.Errorf("e was not nil: %q", e)
+	}
+}
+
+func TestTagging(t *testing.T) {
+
+	e := gerror.New(AnotherError, "test")
+
+	if id, ok := e.Tag().(TestTag); !ok {
+		t.Errorf("Error tag %v has wrong type", id)
+	} else if id != AnotherError {
+		t.Errorf("Expected %s but got %s", AnotherError, id)
+	}
+
+	if e.EqualTag(BasicError) {
+		t.Errorf("Error %s has wrong tag", e)
+	}
+
+	if !e.EqualTag(AnotherError) {
+		t.Errorf("Error %s has wrong tag", e)
+	}
+
+	if !strings.HasPrefix(e.Error(), "1 gerror_test.TestTag: ") {
+		t.Errorf("Missing error id %s", e.Error())
+	}
+
+}
+
+func TestNilTag(t *testing.T) {
+
+	e := gerror.New(nil, testMessage)
+
+	actual := e.Error()
+
+	if !strings.Contains(actual, testMessage) {
+		t.Errorf("%q does not contain %q", actual, testMessage)
+	}
+
+	if !e.EqualTag(nil) {
+		t.Error("Nil tag does not compare equal")
+	}
+
+	if e.EqualTag(BasicError) {
+		t.Error("Non-nil tag compares equal against nil tag in error")
 	}
 }
