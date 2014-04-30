@@ -21,6 +21,7 @@ import (
 	"os"
 )
 
+// Define a suitable tag type and some values.
 type ErrorId int
 
 const (
@@ -29,18 +30,23 @@ const (
 	ErrInvalidPath
 )
 
-func ExampleNew() error {
-	return gerror.New(ErrExample, "Example error message")
-}
-
-func ExampleNewf(portNum int) error {
-	return gerror.Newf(ErrInvalidPort, "Invalid port: %d", portNum)
-}
-
-func ExampleNewFromError(filePath string) (file *os.File, err error) {
-	file, err = os.Open(filePath)
-	if err != nil {
-		return file, gerror.NewFromError(ErrInvalidPath, err)
+func Example() error {
+	gerr := SomeFunc()
+	if gerr != nil {
+		// Use the tag to check for a specific error.
+		if gerr.EqualTag(ErrInvalidPath) {
+			// Act on this error ...
+		}
+		return gerr
 	}
-	return file, nil
+	// ...
+	return nil
+}
+
+func SomeFunc() gerror.Gerror {
+	_, err := os.Open("/some/path")
+	if err != nil {
+		return gerror.NewFromError(ErrInvalidPath, err)
+	}
+	return nil
 }
