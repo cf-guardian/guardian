@@ -24,7 +24,19 @@ import (
 )
 
 type Syscall interface {
-	BindMount(source string, mountPoint string, flags... uintptr) error
+	/*
+		Mounts the given source directory at the given mount point with the "bind" option.
+	*/
+	BindMountReadWrite(source string, mountPoint string) error
+
+	/*
+		Mounts the given source directory at the given mount point read-only with the "bind" option.
+	*/
+	BindMountReadOnly(source string, mountPoint string) error
+
+	/*
+		Unmounts the given mount point.
+	*/
 	Unmount(mountPoint string) error
 }
 
@@ -35,15 +47,13 @@ func New() Syscall {
 	return new(syscallWrapper)
 }
 
-const NO_FLAGS uintptr = 0
-const MS_RDONLY uintptr = trueSyscall.MS_RDONLY
+func (_ *syscallWrapper) BindMountReadWrite(source string, mountPoint string) error {
+	return trueSyscall.Mount(source, mountPoint, "", trueSyscall.MS_BIND, "")
+}
 
-func (_ *syscallWrapper) BindMount(source string, mountPoint string, flags... uintptr) error {
-	var fl uintptr = uintptr(trueSyscall.MS_BIND)
-	for _, f := range flags {
-		fl = fl + f
-	}
-	return trueSyscall.Mount(source, mountPoint, "", fl, "")
+func (_ *syscallWrapper) BindMountReadOnly(source string, mountPoint string) error {
+
+	return trueSyscall.Mount(source, mountPoint, "", trueSyscall.MS_BIND|trueSyscall.MS_RDONLY, "")
 }
 
 func (_ *syscallWrapper) Unmount(mountPoint string) error {
