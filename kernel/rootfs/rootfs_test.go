@@ -21,6 +21,7 @@ import (
 	"github.com/cf-guardian/guardian/kernel/rootfs"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -40,9 +41,43 @@ func (ss *stubSyscall) Unmount(mountPoint string) error {
 	return nil
 }
 
-func TestGenerate(t *testing.T) {
-	rfs := rootfs.NewRootFS(&stubSyscall{})
+func TestNonExistentReadWriteBaseDir(t *testing.T) {
+	rfs, gerr := rootfs.NewRootFS(&stubSyscall{}, "/nosuch")
+	if rfs != nil || !gerr.EqualTag(rootfs.ErrRwBaseDirMissing) {
+		t.Errorf("Incorrect return values (%s, %s)", rfs, gerr)
+		return
+	}
+}
 
+func TestNonDirReadWriteBaseDir(t *testing.T) {
+	tempDir := createTempDir()
+	filePath := createFile(tempDir, "testFile")
+
+	rfs, gerr := rootfs.NewRootFS(&stubSyscall{}, filePath)
+	if rfs != nil || !gerr.EqualTag(rootfs.ErrRwBaseDirIsFile) {
+		t.Errorf("Incorrect return values (%s, %s)", rfs, gerr)
+		return
+	}
+}
+
+func TestReadOnlyReadWriteBaseDir(t *testing.T) {
+	tempDir := createTempDir()
+	dirPath := createDirWithMode(tempDir, "test-rootfs", os.FileMode(0400))
+
+	rfs, gerr := rootfs.NewRootFS(&stubSyscall{}, dirPath)
+	if rfs != nil || !gerr.EqualTag(rootfs.ErrRwBaseDirNotRw) {
+		t.Errorf("Incorrect return values (%s, %s)", rfs, gerr)
+		return
+	}
+}
+
+func TestGenerate(t *testing.T) {
+	tempDir := createTempDir()
+	rfs, gerr := rootfs.NewRootFS(&stubSyscall{}, tempDir)
+	if gerr != nil {
+		t.Errorf("%s", gerr)
+		return
+	}
 	os.MkdirAll("/tmp/guardian-test", 0700)
 	prototype, err := ioutil.TempDir("/tmp/guardian-test", "test-rootfs")
 	if err != nil {
@@ -58,4 +93,42 @@ func TestGenerate(t *testing.T) {
 	}
 
 	fmt.Println(root)
+}
+
+func createTempDir() string {
+	tempDir, err := ioutil.TempDir("/tmp", "guardian-test")
+	check(err)
+	return tempDir
+}
+
+// TODO: Remove duplication with fileutils_test.
+func createFile(td string, fileName string) string {
+	return createFileWithMode(td, fileName, os.FileMode(0666))
+}
+
+func createFileWithMode(td string, fileName string, mode os.FileMode) string {
+	fp := filepath.Join(td, fileName)
+	f, err := os.OpenFile(fp, os.O_CREATE|os.O_EXCL|os.O_WRONLY, mode)
+	check(err)
+	_, err = f.WriteString("test contents")
+	check(err)
+	check(f.Close())
+	return fp
+}
+
+func createDir(td string, dirName string) string {
+	return createDirWithMode(td, dirName, os.FileMode(0777))
+}
+
+func createDirWithMode(td string, dirName string, mode os.FileMode) string {
+	fp := filepath.Join(td, dirName)
+	err := os.Mkdir(fp, mode)
+	check(err)
+	return fp
+}
+
+func check(err error) {
+	if err != nil {
+		panic(err)
+	}
 }

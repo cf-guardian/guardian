@@ -65,7 +65,7 @@ func doCopy(destPath string, srcPath string, topSrcPath string) gerror.Gerror {
 	if sameFile(srcPath, destPath) {
 		return nil
 	}
-	srcMode, gerr := fileMode(srcPath)
+	srcMode, gerr := Filemode(srcPath)
 	if gerr != nil {
 		return gerr
 	}
@@ -113,7 +113,7 @@ func finalDestinationDir(destination string, source string) (finalDestination st
 	defer func() {
 		glog.Infof("openFinalDestinationDir(%s, %s) returning (%v, %v)", destination, source, finalDestination, gerr)
 	}()
-	sourceMode, gerr := fileMode(source)
+	sourceMode, gerr := Filemode(source)
 	if gerr != nil {
 		return finalDestination, gerr
 	}
@@ -140,7 +140,7 @@ func copyFile(destination string, source string) gerror.Gerror {
 	}
 	defer sourceFile.Close()
 
-	mode, gerr := fileMode(source)
+	mode, gerr := Filemode(source)
 	if gerr != nil {
 		return gerr
 	}
@@ -173,7 +173,9 @@ func copySymlink(destLinkPath string, srcLinkPath string, topSrcPath string) ger
 		return gerror.NewFromError(ErrUnexpected, err)
 	}
 	if strings.HasPrefix(topRelativePath, "..") {
-		return gerror.Newf(ErrExternalSymlink, "cannot copy symbolic link %s with target %s which points outside the file or directory being copied %s", srcLinkPath, linkTarget, topSrcPath)
+		return gerror.Newf(ErrExternalSymlink,
+			"cannot copy symbolic link %s with target %s which points outside the file or directory being copied %s",
+			srcLinkPath, linkTarget, topSrcPath)
 	}
 
 	linkParent := filepath.Dir(srcLinkPath)
@@ -181,7 +183,8 @@ func copySymlink(destLinkPath string, srcLinkPath string, topSrcPath string) ger
 	if err != nil {
 		return gerror.NewFromError(ErrUnexpected, err)
 	}
-	glog.Infof("symbolic link %s has target %s which has path %s relative to %s (directory containing link)", srcLinkPath, linkTarget, relativePath, linkParent)
+	glog.Infof("symbolic link %s has target %s which has path %s relative to %s (directory containing link)",
+		srcLinkPath, linkTarget, relativePath, linkParent)
 	err = os.Symlink(relativePath, destLinkPath)
 	if err != nil {
 		return gerror.NewFromError(ErrWritingTargetSymlink, err)
@@ -190,7 +193,11 @@ func copySymlink(destLinkPath string, srcLinkPath string, topSrcPath string) ger
 	return nil
 }
 
-func fileMode(path string) (os.FileMode, gerror.Gerror) {
+/*
+	Returns the os.FileMode of the file with the given path. If the file does not exist, return an error with tag
+	ErrFileNotFound.
+*/
+func Filemode(path string) (os.FileMode, gerror.Gerror) {
 	fi, err := os.Lstat(path)
 	if err != nil {
 		return os.FileMode(0), gerror.NewFromError(ErrFileNotFound, err)

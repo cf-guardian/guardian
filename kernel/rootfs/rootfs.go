@@ -29,6 +29,7 @@ import (
 	"path/filepath"
 )
 
+// ErrorId is used for error ids relating to the RootFS interface.
 type ErrorId int
 
 const (
@@ -71,28 +72,54 @@ type RootFS interface {
 	Generate(prototype string) (string, gerror.Gerror)
 }
 
+// ImplErrorId is used for error ids relating to the implementation of this package.
+type ImplErrorId int
+
+const (
+	ErrRwBaseDirMissing ImplErrorId = iota // the read-write base directory was not found
+	ErrRwBaseDirIsFile                     // a file was found instead of the read-write base directory
+	ErrRwBaseDirNotRw                      // the read-write base directory does not have read and write permissions
+)
+
 const defaultFileMode os.FileMode = 0700
 const tempDirMode os.FileMode = 0777
 
 type rootfs struct {
-	sc syscall.Syscall
+	sc        syscall.Syscall
+	rwBaseDir string
 }
 
-func NewRootFS(sc syscall.Syscall) RootFS {
-	return &rootfs{sc}
+/*
+	Creates a new RootFS instance which uses the given Syscall interface and the given read-write
+	directory as a base for the writable portion of generated root filesystems.
+*/
+func NewRootFS(sc syscall.Syscall, rwBaseDir string) (RootFS, gerror.Gerror) {
+	fileMode, gerr := fileutils.Filemode(rwBaseDir)
+	if gerr != nil {
+		return nil, gerror.NewFromError(ErrRwBaseDirMissing, gerr)
+	}
+	if !fileMode.IsDir() {
+		return nil, gerror.Newf(ErrRwBaseDirIsFile, "File found in place of read-write base directory: %s", rwBaseDir)
+	}
+	if fileMode.Perm()&0600 != 0600 {
+		return nil, gerror.Newf(ErrRwBaseDirNotRw,
+			"Read-write base directory does not have read and write permissions: %s has permissions %s",
+			rwBaseDir, fileMode.String())
+	}
+	return &rootfs{sc, rwBaseDir}, nil
 }
 
 func (rfs *rootfs) Generate(prototype string) (root string, gerr gerror.Gerror) {
 	var err error
 
 	defer func() {
-		if err != nil {
+		if gerr != nil {
 			root = ""
 		}
 	}()
 
 	var cleanup = func(capture gerror.Gerror, undo func()) {
-		if capture == nil && err != nil {
+		if capture == nil && gerr != nil {
 			undo()
 		} else {
 			gerr = capture
@@ -100,14 +127,14 @@ func (rfs *rootfs) Generate(prototype string) (root string, gerr gerror.Gerror) 
 	}
 
 	if err == nil {
-		err = os.MkdirAll("/tmp/guardian", defaultFileMode)
+		err = os.MkdirAll(rfs.rwBaseDir, defaultFileMode)
 		gerr = gerror.NewFromError(ErrCreateTempDir, err)
 	}
 
 	var rwPath string
 
 	if err == nil {
-		rwPath, err = ioutil.TempDir("/tmp/guardian", "tmp-rootfs")
+		rwPath, err = ioutil.TempDir(rfs.rwBaseDir, "tmp-rootfs")
 		var undo = func() {
 			if e := os.RemoveAll(rwPath); e != nil {
 				log.Printf("Encountered %q while recovering from %q", e, gerr)
@@ -117,7 +144,7 @@ func (rfs *rootfs) Generate(prototype string) (root string, gerr gerror.Gerror) 
 	}
 
 	if err == nil {
-		root, err = ioutil.TempDir("/tmp/guardian", "mnt")
+		root, err = ioutil.TempDir(rfs.rwBaseDir, "mnt")
 		var undo = func() {
 			if e := os.RemoveAll(root); e != nil {
 				log.Printf("Encountered %q while recovering from %q", e, gerr)
