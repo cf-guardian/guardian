@@ -28,7 +28,11 @@ type stubSyscall struct {
 	callCount int
 }
 
-func (ss *stubSyscall) BindMount(source string, mountPoint string, flags ...uintptr) error {
+func (ss *stubSyscall) BindMountReadOnly(source string, mountPoint string) error {
+	return nil
+}
+
+func (ss *stubSyscall) BindMountReadWrite(source string, mountPoint string) error {
 	return nil
 }
 

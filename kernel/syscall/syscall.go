@@ -15,13 +15,9 @@
 */
 
 /*
-Package syscall wraps the standard syscall package to support testing.
+Package syscall provides an abstraction of the standard syscall package to support testing.
 */
 package syscall
-
-import (
-	trueSyscall "syscall"
-)
 
 type Syscall interface {
 	/*
@@ -38,24 +34,4 @@ type Syscall interface {
 		Unmounts the given mount point.
 	*/
 	Unmount(mountPoint string) error
-}
-
-type syscallWrapper struct {
-}
-
-func New() Syscall {
-	return new(syscallWrapper)
-}
-
-func (_ *syscallWrapper) BindMountReadWrite(source string, mountPoint string) error {
-	return trueSyscall.Mount(source, mountPoint, "", trueSyscall.MS_BIND, "")
-}
-
-func (_ *syscallWrapper) BindMountReadOnly(source string, mountPoint string) error {
-
-	return trueSyscall.Mount(source, mountPoint, "", trueSyscall.MS_BIND|trueSyscall.MS_RDONLY, "")
-}
-
-func (_ *syscallWrapper) Unmount(mountPoint string) error {
-	return trueSyscall.Unmount(mountPoint, 0)
 }

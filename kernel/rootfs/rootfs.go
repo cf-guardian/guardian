@@ -37,6 +37,7 @@ const (
 	ErrBindMountRoot
 	ErrBindMountSubdir
 	ErrOverlayTempDir
+	ErrOverlayDir
 )
 
 type RootFS interface {
@@ -74,10 +75,10 @@ const defaultFileMode os.FileMode = 0700
 const tempDirMode os.FileMode = 0777
 
 type rootfs struct {
-	sc *syscall.Syscall
+	sc syscall.Syscall
 }
 
-func NewRootFS(sc *syscall.Syscall) RootFS {
+func NewRootFS(sc syscall.Syscall) RootFS {
 	return &rootfs{sc}
 }
 
@@ -90,7 +91,7 @@ func (rfs *rootfs) Generate(prototype string) (root string, gerr gerror.Gerror) 
 		}
 	}()
 
-	var cleanup = func(capture error, undo func()) {
+	var cleanup = func(capture gerror.Gerror, undo func()) {
 		if capture == nil && err != nil {
 			undo()
 		} else {
@@ -128,7 +129,7 @@ func (rfs *rootfs) Generate(prototype string) (root string, gerr gerror.Gerror) 
 	if err == nil {
 		err = rfs.sc.BindMountReadWrite(prototype, root)
 		undo := func() {
-			if e := sc.Unmount(root); e != nil {
+			if e := rfs.sc.Unmount(root); e != nil {
 				log.Printf("Encountered %q while recovering from %q", e, gerr)
 			}
 		}
@@ -141,13 +142,13 @@ func (rfs *rootfs) Generate(prototype string) (root string, gerr gerror.Gerror) 
 	}
 
 	if err == nil {
-		gerr = overlay(root, rwPath)
+		gerr = rfs.overlay(root, rwPath)
 	}
 
 	return
 }
 
-func (rfs *rootfs) overlay(root string, rwPath string) error {
+func (rfs *rootfs) overlay(root string, rwPath string) gerror.Gerror {
 	dirs := []string{`proc`, `dev`, `etc`, `home`, `sbin`, `var`, `tmp`}
 
 	tmpDir := filepath.Join(rwPath, `tmp`)
@@ -156,25 +157,24 @@ func (rfs *rootfs) overlay(root string, rwPath string) error {
 	}
 
 	for _, dir := range dirs {
-		if gerr := overlayDirectory(dir, root, rwPath); gerr != nil {
+		if gerr := rfs.overlayDirectory(dir, root, rwPath); gerr != nil {
 			return gerr
 		}
 	}
 	return nil
 }
 
-func (rfs *rootfs) overlayDirectory(dir string, root string, rwPath string) error {
+func (rfs *rootfs) overlayDirectory(dir string, root string, rwPath string) gerror.Gerror {
 	dirPath := filepath.Join(rwPath, dir)
 	mntPath := filepath.Join(root, dir)
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		if _, err = os.Stat(mntPath); os.IsExist(err) {
 			err = fileutils.Copy(dirPath, mntPath)
-
 		} else {
 			err = os.MkdirAll(dirPath, tempDirMode)
 		}
 		if err != nil {
-			return err
+			return gerror.NewFromError(ErrOverlayDir, err)
 		}
 	}
 
