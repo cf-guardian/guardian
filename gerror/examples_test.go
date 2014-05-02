@@ -21,14 +21,6 @@ import (
 	"os"
 )
 
-type ErrorId int
-
-const (
-	ErrExample ErrorId = iota
-	ErrInvalidPort
-	ErrInvalidPath
-)
-
 func ExampleNew() error {
 	return gerror.New(ErrExample, "Example error message")
 }
