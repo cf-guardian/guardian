@@ -23,8 +23,8 @@ import (
 	"github.com/cf-guardian/guardian/gerror"
 	"github.com/cf-guardian/guardian/kernel/fileutils"
 	"github.com/cf-guardian/guardian/kernel/syscall"
+	"github.com/golang/glog"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 )
@@ -33,8 +33,8 @@ import (
 type ErrorId int
 
 const (
-	ErrCreateTempDir ErrorId = iota
-	ErrGetTempDirName
+	ErrCreateTempDir ErrorId = iota // a temporary directory for the read-write layer could not be created
+	ErrCreateMountDir
 	ErrBindMountRoot
 	ErrBindMountSubdir
 	ErrOverlayTempDir
@@ -81,7 +81,6 @@ const (
 	ErrRwBaseDirNotRw                      // the read-write base directory does not have read and write permissions
 )
 
-const defaultFileMode os.FileMode = 0700
 const tempDirMode os.FileMode = 0777
 
 type rootfs struct {
@@ -110,8 +109,6 @@ func NewRootFS(sc syscall.Syscall_FS, rwBaseDir string) (RootFS, gerror.Gerror) 
 }
 
 func (rfs *rootfs) Generate(prototype string) (root string, gerr gerror.Gerror) {
-	var err error
-
 	defer func() {
 		if gerr != nil {
 			root = ""
@@ -126,49 +123,41 @@ func (rfs *rootfs) Generate(prototype string) (root string, gerr gerror.Gerror) 
 		}
 	}
 
-	if err == nil {
-		err = os.MkdirAll(rfs.rwBaseDir, defaultFileMode)
-		gerr = gerror.NewFromError(ErrCreateTempDir, err)
-	}
-
 	var rwPath string
 
-	if err == nil {
-		rwPath, err = ioutil.TempDir(rfs.rwBaseDir, "tmp-rootfs")
+	if gerr == nil {
+		var err error
+		rwPath, err = ioutil.TempDir(rfs.rwBaseDir, "tmp-rootfs-")
 		var undo = func() {
 			if e := os.RemoveAll(rwPath); e != nil {
-				log.Printf("Encountered %q while recovering from %q", e, gerr)
+				glog.Warningf("Encountered %q while recovering from %q", e, gerr)
 			}
 		}
-		defer cleanup(gerror.NewFromError(ErrGetTempDirName, err), undo)
+		defer cleanup(gerror.NewFromError(ErrCreateTempDir, err), undo)
 	}
 
-	if err == nil {
-		root, err = ioutil.TempDir(rfs.rwBaseDir, "mnt")
+	if gerr == nil {
+		var err error
+		root, err = ioutil.TempDir(rfs.rwBaseDir, "mnt-")
 		var undo = func() {
 			if e := os.RemoveAll(root); e != nil {
-				log.Printf("Encountered %q while recovering from %q", e, gerr)
+				glog.Warningf("Encountered %q while recovering from %q", e, gerr)
 			}
 		}
-		defer cleanup(gerror.NewFromError(ErrGetTempDirName, err), undo)
+		defer cleanup(gerror.NewFromError(ErrCreateMountDir, err), undo)
 	}
 
-	if err == nil {
-		err = rfs.sc.BindMountReadWrite(prototype, root)
+	if gerr == nil {
+		err := rfs.sc.BindMountReadOnly(prototype, root)
 		undo := func() {
 			if e := rfs.sc.Unmount(root); e != nil {
-				log.Printf("Encountered %q while recovering from %q", e, gerr)
+				glog.Warningf("Encountered %q while recovering from %q", e, gerr)
 			}
 		}
 		defer cleanup(gerror.NewFromError(ErrBindMountRoot, err), undo)
 	}
 
-	if err == nil {
-		err = rfs.sc.BindMountReadOnly(prototype, root)
-		gerr = gerror.NewFromError(ErrBindMountRoot, err)
-	}
-
-	if err == nil {
+	if gerr == nil {
 		gerr = rfs.overlay(root, rwPath)
 	}
 
@@ -176,6 +165,7 @@ func (rfs *rootfs) Generate(prototype string) (root string, gerr gerror.Gerror) 
 }
 
 func (rfs *rootfs) overlay(root string, rwPath string) gerror.Gerror {
+	glog.Infof("overlay(%q, %q)", root, rwPath)
 	dirs := []string{`proc`, `dev`, `etc`, `home`, `sbin`, `var`, `tmp`}
 
 	tmpDir := filepath.Join(rwPath, `tmp`)
@@ -183,8 +173,13 @@ func (rfs *rootfs) overlay(root string, rwPath string) gerror.Gerror {
 		return gerror.NewFromError(ErrOverlayTempDir, err)
 	}
 
-	for _, dir := range dirs {
+	for i, dir := range dirs {
 		if gerr := rfs.overlayDirectory(dir, root, rwPath); gerr != nil {
+			for j := i - 1; j >= 0; {
+				if cleanupGerr := rfs.unmountOverlayDirectory(dir, root); cleanupGerr != nil {
+					glog.Warningf("Encountered %q while recovering from %q", cleanupGerr, gerr)
+				}
+			}
 			return gerr
 		}
 	}
@@ -206,6 +201,15 @@ func (rfs *rootfs) overlayDirectory(dir string, root string, rwPath string) gerr
 	}
 
 	err := rfs.sc.BindMountReadWrite(dirPath, mntPath)
+	if err != nil {
+		return gerror.NewFromError(ErrBindMountSubdir, err)
+	}
+	return nil
+}
+
+func (rfs *rootfs) unmountOverlayDirectory(dir string, root string) gerror.Gerror {
+	mntPath := filepath.Join(root, dir)
+	err := rfs.sc.Unmount(mntPath)
 	if err != nil {
 		return gerror.NewFromError(ErrBindMountSubdir, err)
 	}

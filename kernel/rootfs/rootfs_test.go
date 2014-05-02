@@ -17,7 +17,6 @@
 package rootfs_test
 
 import (
-	"fmt"
 	"github.com/cf-guardian/guardian/kernel/rootfs"
 	"io/ioutil"
 	"os"
@@ -92,11 +91,11 @@ func TestGenerate(t *testing.T) {
 		return
 	}
 
-	fmt.Println(root)
+	_ = root
 }
 
 func createTempDir() string {
-	tempDir, err := ioutil.TempDir("/tmp", "guardian-test")
+	tempDir, err := ioutil.TempDir("/tmp", "guardian-test-")
 	check(err)
 	return tempDir
 }
