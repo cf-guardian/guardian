@@ -19,7 +19,8 @@ Package syscall provides an abstraction of the standard syscall package to suppo
 */
 package syscall
 
-type Syscall interface {
+// The Syscall_FS interface provides filesystem-related system calls.
+type Syscall_FS interface {
 	/*
 		Mounts the given source directory at the given mount point with the "bind" option.
 	*/

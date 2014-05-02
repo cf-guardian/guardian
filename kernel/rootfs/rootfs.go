@@ -85,7 +85,7 @@ const defaultFileMode os.FileMode = 0700
 const tempDirMode os.FileMode = 0777
 
 type rootfs struct {
-	sc        syscall.Syscall
+	sc        syscall.Syscall_FS
 	rwBaseDir string
 }
 
@@ -93,7 +93,7 @@ type rootfs struct {
 	Creates a new RootFS instance which uses the given Syscall interface and the given read-write
 	directory as a base for the writable portion of generated root filesystems.
 */
-func NewRootFS(sc syscall.Syscall, rwBaseDir string) (RootFS, gerror.Gerror) {
+func NewRootFS(sc syscall.Syscall_FS, rwBaseDir string) (RootFS, gerror.Gerror) {
 	fileMode, gerr := fileutils.Filemode(rwBaseDir)
 	if gerr != nil {
 		return nil, gerror.NewFromError(ErrRwBaseDirMissing, gerr)
