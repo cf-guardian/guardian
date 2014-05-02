@@ -85,6 +85,7 @@ const tempDirMode os.FileMode = 0777
 
 type rootfs struct {
 	sc        syscall.Syscall_FS
+	f         fileutils.Fileutils
 	rwBaseDir string
 }
 
@@ -92,8 +93,8 @@ type rootfs struct {
 	Creates a new RootFS instance which uses the given Syscall interface and the given read-write
 	directory as a base for the writable portion of generated root filesystems.
 */
-func NewRootFS(sc syscall.Syscall_FS, rwBaseDir string) (RootFS, gerror.Gerror) {
-	fileMode, gerr := fileutils.Filemode(rwBaseDir)
+func NewRootFS(sc syscall.Syscall_FS, f fileutils.Fileutils, rwBaseDir string) (RootFS, gerror.Gerror) {
+	fileMode, gerr := f.Filemode(rwBaseDir)
 	if gerr != nil {
 		return nil, gerror.NewFromError(ErrRwBaseDirMissing, gerr)
 	}
@@ -105,7 +106,7 @@ func NewRootFS(sc syscall.Syscall_FS, rwBaseDir string) (RootFS, gerror.Gerror) 
 			"Read-write base directory does not have read and write permissions: %s has permissions %s",
 			rwBaseDir, fileMode.String())
 	}
-	return &rootfs{sc, rwBaseDir}, nil
+	return &rootfs{sc, f, rwBaseDir}, nil
 }
 
 func (rfs *rootfs) Generate(prototype string) (root string, gerr gerror.Gerror) {
@@ -191,7 +192,7 @@ func (rfs *rootfs) overlayDirectory(dir string, root string, rwPath string) gerr
 	mntPath := filepath.Join(root, dir)
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		if _, err = os.Stat(mntPath); os.IsExist(err) {
-			err = fileutils.Copy(dirPath, mntPath)
+			err = rfs.f.Copy(dirPath, mntPath)
 		} else {
 			err = os.MkdirAll(dirPath, tempDirMode)
 		}

@@ -31,12 +31,14 @@ func TestErrorIds(t *testing.T) {
 }
 
 func TestCopyFile(t *testing.T) {
+	f := createFileutils()
+
 	td := createTmpDir()
 	defer os.RemoveAll(td)
 
 	src := createFile(td, "src.file")
 	target := filepath.Join(td, "target.file")
-	err := fileutils.Copy(target, src)
+	err := f.Copy(target, src)
 	if err != nil {
 		t.Errorf("Failed: %s", err)
 		return
@@ -45,12 +47,14 @@ func TestCopyFile(t *testing.T) {
 }
 
 func TestCopyNonExistent(t *testing.T) {
+	f := createFileutils()
+
 	td := createTmpDir()
 	defer os.RemoveAll(td)
 
 	badSrc := filepath.Join(td, "src.file")
 	target := filepath.Join(td, "target.file")
-	err := fileutils.Copy(target, badSrc)
+	err := f.Copy(target, badSrc)
 	if !err.EqualTag(fileutils.ErrFileNotFound) {
 		t.Errorf("Unexpected error %v", err)
 		return
@@ -58,11 +62,13 @@ func TestCopyNonExistent(t *testing.T) {
 }
 
 func TestCopySameFile(t *testing.T) {
+	f := createFileutils()
+
 	td := createTmpDir()
 	defer os.RemoveAll(td)
 
 	src := createFile(td, "src.file")
-	err := fileutils.Copy(src, src)
+	err := f.Copy(src, src)
 	if err != nil {
 		t.Errorf("Failed: %s", err)
 		return
@@ -71,12 +77,14 @@ func TestCopySameFile(t *testing.T) {
 }
 
 func TestCopyFileMode(t *testing.T) {
+	f := createFileutils()
+
 	td := createTmpDir()
 	defer os.RemoveAll(td)
 
 	src := createFileWithMode(td, "src.file", os.FileMode(0642))
 	target := filepath.Join(td, "target.file")
-	err := fileutils.Copy(target, src)
+	err := f.Copy(target, src)
 	if err != nil {
 		t.Errorf("Failed: %s", err)
 		return
@@ -89,6 +97,8 @@ func TestCopyFileMode(t *testing.T) {
 }
 
 func TestCopyDirectoryToNew(t *testing.T) {
+	f := createFileutils()
+
 	td := createTmpDir()
 	defer os.RemoveAll(td)
 
@@ -100,7 +110,7 @@ func TestCopyDirectoryToNew(t *testing.T) {
 	createFile(srcDir, "file2")
 
 	targetDir := filepath.Join(td, "target")
-	err = fileutils.Copy(targetDir, srcDir)
+	err = f.Copy(targetDir, srcDir)
 	if err != nil {
 		t.Errorf("Failed: %s", err)
 		return
@@ -111,6 +121,8 @@ func TestCopyDirectoryToNew(t *testing.T) {
 }
 
 func TestCopyDirectoryNestedToNew(t *testing.T) {
+	f := createFileutils()
+
 	td := createTmpDir()
 	defer os.RemoveAll(td)
 
@@ -126,7 +138,7 @@ func TestCopyDirectoryNestedToNew(t *testing.T) {
 	createFile(subDir, "file2")
 
 	targetDir := filepath.Join(td, "target")
-	err = fileutils.Copy(targetDir, srcDir)
+	err = f.Copy(targetDir, srcDir)
 	if err != nil {
 		t.Errorf("Failed: %s", err)
 		return
@@ -137,6 +149,8 @@ func TestCopyDirectoryNestedToNew(t *testing.T) {
 }
 
 func TestCopyDirectoryToExisting(t *testing.T) {
+	f := createFileutils()
+
 	td := createTmpDir()
 	defer os.RemoveAll(td)
 
@@ -150,7 +164,7 @@ func TestCopyDirectoryToExisting(t *testing.T) {
 	targetDir := filepath.Join(td, "target")
 	err = os.Mkdir(targetDir, os.FileMode(0777))
 	check(err)
-	err = fileutils.Copy(targetDir, srcDir)
+	err = f.Copy(targetDir, srcDir)
 	if err != nil {
 		t.Errorf("Failed: %s", err)
 		return
@@ -163,12 +177,14 @@ func TestCopyDirectoryToExisting(t *testing.T) {
 }
 
 func TestCopyDirMode(t *testing.T) {
+	f := createFileutils()
+
 	td := createTmpDir()
 	defer os.RemoveAll(td)
 
 	src := createDirWithMode(td, "src.dir", os.FileMode(0642))
 	target := filepath.Join(td, "target.dir")
-	err := fileutils.Copy(target, src)
+	err := f.Copy(target, src)
 	if err != nil {
 		t.Errorf("Failed: %s", err)
 		return
@@ -181,6 +197,8 @@ func TestCopyDirMode(t *testing.T) {
 }
 
 func TestCopyDirInternalSymlink(t *testing.T) {
+	f := createFileutils()
+
 	td := createTmpDir()
 	defer os.RemoveAll(td)
 
@@ -204,7 +222,7 @@ func TestCopyDirInternalSymlink(t *testing.T) {
 	check(err)
 
 	targetDir := filepath.Join(td, "target")
-	err = fileutils.Copy(targetDir, srcDir)
+	err = f.Copy(targetDir, srcDir)
 	if err != nil {
 		t.Errorf("Failed: %s", err)
 		return
@@ -228,6 +246,8 @@ func TestCopyDirInternalSymlink(t *testing.T) {
 }
 
 func TestCopyDirInternalFileSymlink(t *testing.T) {
+	f := createFileutils()
+
 	td := createTmpDir()
 	defer os.RemoveAll(td)
 
@@ -248,7 +268,7 @@ func TestCopyDirInternalFileSymlink(t *testing.T) {
 	check(err)
 
 	targetDir := filepath.Join(td, "target")
-	err = fileutils.Copy(targetDir, srcDir)
+	err = f.Copy(targetDir, srcDir)
 	if err != nil {
 		t.Errorf("Failed: %s", err)
 		return
@@ -272,6 +292,8 @@ func TestCopyDirInternalFileSymlink(t *testing.T) {
 }
 
 func TestCopyDirExternalSymlink(t *testing.T) {
+	f := createFileutils()
+
 	td := createTmpDir()
 	defer os.RemoveAll(td)
 
@@ -290,7 +312,7 @@ func TestCopyDirExternalSymlink(t *testing.T) {
 	check(err)
 
 	targetDir := filepath.Join(td, "target")
-	err = fileutils.Copy(targetDir, srcDir)
+	err = f.Copy(targetDir, srcDir)
 	if err == nil {
 		t.Errorf("Failed: should not have succeeded in copying external symbolic link", err)
 		return
@@ -298,6 +320,8 @@ func TestCopyDirExternalSymlink(t *testing.T) {
 }
 
 func TestCopyDirInternalRelativeSymlink(t *testing.T) {
+	f := createFileutils()
+
 	td := createTmpDir()
 	defer os.RemoveAll(td)
 
@@ -317,7 +341,7 @@ func TestCopyDirInternalRelativeSymlink(t *testing.T) {
 	check(err)
 
 	targetDir := filepath.Join(td, "target")
-	err = fileutils.Copy(targetDir, srcDir)
+	err = f.Copy(targetDir, srcDir)
 	if err != nil {
 		t.Errorf("Failed: %s", err)
 		return
@@ -325,6 +349,8 @@ func TestCopyDirInternalRelativeSymlink(t *testing.T) {
 }
 
 func TestCopyDirExternalRelativeSymlink(t *testing.T) {
+	f := createFileutils()
+
 	td := createTmpDir()
 	defer os.RemoveAll(td)
 
@@ -346,7 +372,7 @@ func TestCopyDirExternalRelativeSymlink(t *testing.T) {
 	check(err)
 
 	targetDir := filepath.Join(td, "target")
-	err = fileutils.Copy(targetDir, srcDir)
+	err = f.Copy(targetDir, srcDir)
 	if err == nil {
 		t.Errorf("Failed: should not have external relative symbolic link")
 		return
@@ -354,6 +380,8 @@ func TestCopyDirExternalRelativeSymlink(t *testing.T) {
 }
 
 func TestCopyFileSymlink(t *testing.T) {
+	f := createFileutils()
+
 	td := createTmpDir()
 	defer os.RemoveAll(td)
 
@@ -362,7 +390,7 @@ func TestCopyFileSymlink(t *testing.T) {
 	err := os.Symlink(src, link)
 	check(err)
 	target := filepath.Join(td, "target.file")
-	err = fileutils.Copy(target, link)
+	err = f.Copy(target, link)
 	if err == nil {
 		t.Errorf("Failed: should not have succeeded in copying external symbolic link")
 		return
@@ -370,6 +398,8 @@ func TestCopyFileSymlink(t *testing.T) {
 }
 
 func TestCopyFileSameSymlink(t *testing.T) {
+	f := createFileutils()
+
 	td := createTmpDir()
 	defer os.RemoveAll(td)
 
@@ -377,11 +407,15 @@ func TestCopyFileSameSymlink(t *testing.T) {
 	link := filepath.Join(td, "link")
 	err := os.Symlink(src, link)
 	check(err)
-	err = fileutils.Copy(link, link)
+	err = f.Copy(link, link)
 	if err != nil {
 		t.Errorf("Failed: %s", err)
 		return
 	}
+}
+
+func createFileutils() fileutils.Fileutils {
+	return fileutils.New()
 }
 
 func createDir(td string, dirName string) string {

@@ -17,6 +17,8 @@
 package rootfs_test
 
 import (
+	"github.com/cf-guardian/guardian/gerror"
+	"github.com/cf-guardian/guardian/kernel/fileutils"
 	"github.com/cf-guardian/guardian/kernel/rootfs"
 	"io/ioutil"
 	"os"
@@ -40,8 +42,23 @@ func (ss *stubSyscall) Unmount(mountPoint string) error {
 	return nil
 }
 
+type stubFileutils struct {
+	FM os.FileMode
+}
+
+func (f *stubFileutils) Copy(destPath string, srcPath string) gerror.Gerror {
+	return nil
+}
+
+func (f *stubFileutils) Filemode(path string) (os.FileMode, gerror.Gerror) {
+	if f.FM&os.ModeNamedPipe == os.ModeNamedPipe { // FIXME: temporary hack
+		return os.FileMode(0000), gerror.New(fileutils.ErrFileNotFound, "test error")
+	}
+	return f.FM, nil
+}
+
 func TestNonExistentReadWriteBaseDir(t *testing.T) {
-	rfs, gerr := rootfs.NewRootFS(&stubSyscall{}, "/nosuch")
+	rfs, gerr := rootfs.NewRootFS(&stubSyscall{}, &stubFileutils{os.ModeNamedPipe | os.FileMode(0700)}, "/nosuch")
 	if rfs != nil || !gerr.EqualTag(rootfs.ErrRwBaseDirMissing) {
 		t.Errorf("Incorrect return values (%s, %s)", rfs, gerr)
 		return
@@ -52,7 +69,7 @@ func TestNonDirReadWriteBaseDir(t *testing.T) {
 	tempDir := createTempDir()
 	filePath := createFile(tempDir, "testFile")
 
-	rfs, gerr := rootfs.NewRootFS(&stubSyscall{}, filePath)
+	rfs, gerr := rootfs.NewRootFS(&stubSyscall{}, &stubFileutils{os.FileMode(0700)}, filePath)
 	if rfs != nil || !gerr.EqualTag(rootfs.ErrRwBaseDirIsFile) {
 		t.Errorf("Incorrect return values (%s, %s)", rfs, gerr)
 		return
@@ -63,7 +80,7 @@ func TestReadOnlyReadWriteBaseDir(t *testing.T) {
 	tempDir := createTempDir()
 	dirPath := createDirWithMode(tempDir, "test-rootfs", os.FileMode(0400))
 
-	rfs, gerr := rootfs.NewRootFS(&stubSyscall{}, dirPath)
+	rfs, gerr := rootfs.NewRootFS(&stubSyscall{}, &stubFileutils{os.ModeDir | os.FileMode(0100)}, dirPath)
 	if rfs != nil || !gerr.EqualTag(rootfs.ErrRwBaseDirNotRw) {
 		t.Errorf("Incorrect return values (%s, %s)", rfs, gerr)
 		return
@@ -72,7 +89,7 @@ func TestReadOnlyReadWriteBaseDir(t *testing.T) {
 
 func TestGenerate(t *testing.T) {
 	tempDir := createTempDir()
-	rfs, gerr := rootfs.NewRootFS(&stubSyscall{}, tempDir)
+	rfs, gerr := rootfs.NewRootFS(&stubSyscall{}, &stubFileutils{os.ModeDir | os.FileMode(0700)}, tempDir)
 	if gerr != nil {
 		t.Errorf("%s", gerr)
 		return

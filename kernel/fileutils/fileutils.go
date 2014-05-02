@@ -44,44 +44,62 @@ const (
 	ErrExternalSymlink
 )
 
-/*
-	Copy copies a source file to a destination file. File contents are copied. File mode and permissions
-	(as described in http://golang.org/pkg/os/#FileMode) are copied.
+type Fileutils interface {
 
-	Directories are copied, along with their contents.
+	/*
+		Copy copies a source file to a destination file. File contents are copied. File mode and permissions
+		(as described in http://golang.org/pkg/os/#FileMode) are copied.
 
-	Copying a file or directory to itself succeeds but does not modify the filesystem.
+		Directories are copied, along with their contents.
 
-	Symbolic links are not followed and are copied provided they refer to a file or directory being copied
-	(otherwise a non-nil error is returned). The only exception is copying a symbolic link to itself, which
-	always succeeds.
-*/
-func Copy(destPath string, srcPath string) gerror.Gerror {
-	glog.Infof("Copy(%s, %s)", destPath, srcPath)
-	return doCopy(destPath, srcPath, srcPath)
+		Copying a file or directory to itself succeeds but does not modify the filesystem.
+
+		Symbolic links are not followed and are copied provided they refer to a file or directory being copied
+		(otherwise a non-nil error is returned). The only exception is copying a symbolic link to itself, which
+		always succeeds.
+	*/
+	Copy(destPath string, srcPath string) gerror.Gerror
+
+	/*
+		Filemode returns the os.FileMode of the file with the given path. If the file does not exist, returns
+		an error with tag ErrFileNotFound.
+	*/
+	Filemode(path string) (os.FileMode, gerror.Gerror)
 }
 
-func doCopy(destPath string, srcPath string, topSrcPath string) gerror.Gerror {
-	if sameFile(srcPath, destPath) {
+type futils struct {
+}
+
+func New() Fileutils {
+	return &futils{}
+}
+
+func (f *futils) Copy(destPath string, srcPath string) gerror.Gerror {
+	glog.Infof("Copy(%s, %s)", destPath, srcPath)
+	return f.doCopy(destPath, srcPath, srcPath)
+}
+
+func (f *futils) doCopy(destPath string, srcPath string, topSrcPath string) gerror.Gerror {
+	if f.sameFile(srcPath, destPath) {
 		return nil
 	}
-	srcMode, gerr := Filemode(srcPath)
+	srcMode, gerr := f.Filemode(srcPath)
 	if gerr != nil {
 		return gerr
 	}
 
 	if srcMode&os.ModeSymlink == os.ModeSymlink {
-		return copySymlink(destPath, srcPath, topSrcPath)
+		return f.copySymlink(destPath, srcPath, topSrcPath)
 	} else if srcMode.IsDir() {
-		return copyDir(destPath, srcPath, topSrcPath)
+		return f.copyDir(destPath, srcPath, topSrcPath)
 	} else {
-		return copyFile(destPath, srcPath)
+		return f.copyFile(destPath, srcPath)
 	}
 }
 
-func copyDir(destination string, source string, topSource string) gerror.Gerror {
+func (f *futils) copyDir(destination string, source string, topSource string) gerror.Gerror {
 	glog.Infof("copyDir(%s, %s)", destination, source)
-	finalDestination, gerr := finalDestinationDir(destination, source)
+	finalDestination, gerr := f.finalDestinationDir(destination, source)
 	if gerr != nil {
 		return gerr
 	}
@@ -97,7 +115,7 @@ func copyDir(destination string, source string, topSource string) gerror.Gerror 
 
 	for _, name := range names {
 		glog.Infof("copying %s from %s to %s", name, source, finalDestination)
-		gerr = doCopy(filepath.Join(finalDestination, name), filepath.Join(source, name), topSource)
+		gerr = f.doCopy(filepath.Join(finalDestination, name), filepath.Join(source, name), topSource)
 		if gerr != nil {
 			return gerr
 		}
@@ -109,11 +127,11 @@ func copyDir(destination string, source string, topSource string) gerror.Gerror 
 /*
 	Determine the final destination directory and return an opened file referring to it.
 */
-func finalDestinationDir(destination string, source string) (finalDestination string, gerr gerror.Gerror) {
+func (f *futils) finalDestinationDir(destination string, source string) (finalDestination string, gerr gerror.Gerror) {
 	defer func() {
 		glog.Infof("openFinalDestinationDir(%s, %s) returning (%v, %v)", destination, source, finalDestination, gerr)
 	}()
-	sourceMode, gerr := Filemode(source)
+	sourceMode, gerr := f.Filemode(source)
 	if gerr != nil {
 		return finalDestination, gerr
 	}
@@ -132,7 +150,7 @@ func finalDestinationDir(destination string, source string) (finalDestination st
 	return finalDestination, nil
 }
 
-func copyFile(destination string, source string) gerror.Gerror {
+func (f *futils) copyFile(destination string, source string) gerror.Gerror {
 	glog.Infof("copyFile(%s, %s)", destination, source)
 	sourceFile, err := os.OpenFile(source, os.O_RDONLY, 0666)
 	if err != nil {
@@ -140,7 +158,7 @@ func copyFile(destination string, source string) gerror.Gerror {
 	}
 	defer sourceFile.Close()
 
-	mode, gerr := Filemode(source)
+	mode, gerr := f.Filemode(source)
 	if gerr != nil {
 		return gerr
 	}
@@ -155,7 +173,7 @@ func copyFile(destination string, source string) gerror.Gerror {
 	return gerror.NewFromError(ErrCopyingFile, err)
 }
 
-func copySymlink(destLinkPath string, srcLinkPath string, topSrcPath string) gerror.Gerror {
+func (f *futils) copySymlink(destLinkPath string, srcLinkPath string, topSrcPath string) gerror.Gerror {
 	glog.Infof("copySymLink(%s, %s, %s)", destLinkPath, srcLinkPath, topSrcPath)
 	linkTarget, err := os.Readlink(srcLinkPath)
 	if err != nil {
@@ -193,11 +211,7 @@ func copySymlink(destLinkPath string, srcLinkPath string, topSrcPath string) ger
 	return nil
 }
 
-/*
-	Returns the os.FileMode of the file with the given path. If the file does not exist, return an error with tag
-	ErrFileNotFound.
-*/
-func Filemode(path string) (os.FileMode, gerror.Gerror) {
+func (f *futils) Filemode(path string) (os.FileMode, gerror.Gerror) {
 	fi, err := os.Lstat(path)
 	if err != nil {
 		return os.FileMode(0), gerror.NewFromError(ErrFileNotFound, err)
@@ -205,7 +219,7 @@ func Filemode(path string) (os.FileMode, gerror.Gerror) {
 	return fi.Mode(), nil
 }
 
-func sameFile(srcPath string, destPath string) bool {
+func (f *futils) sameFile(srcPath string, destPath string) bool {
 	srcFi, err := os.Stat(srcPath)
 	if err == nil {
 		destFi, err := os.Stat(destPath)
