@@ -89,12 +89,20 @@ explicit dependencies.
 
 ## Testing
 
-Issue:
+To run the tests in a specific directory, issue:
 ```
 go test
 ```
 
 If the tests succeed, this should print `PASS`.
+
+**gomock**
+
+Unit testing is performed on packages. [gomock](http://godoc.org/code.google.com/p/gomock/gomock) is used as a mocking framework and to generate mock implementations of interfaces and thereby enable packages to be tested in isolation from each other.
+
+Mocks are stored in a subdirectory of the directory containing the mocked interface. For example, the mocks for the `kernel/fileutils` package are stored in `kernel/fileutils/mock_fileutils`.
+
+To re-generate the generated mock implementations of interfaces, ensure `mockgen` is on the path and then run the script `development/scripts/update_mocks`. If you add a generated mock, don't forget to add it to `update_mocks`.
 
 ## Editing
 
