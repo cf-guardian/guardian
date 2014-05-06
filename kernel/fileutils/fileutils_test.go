@@ -18,7 +18,7 @@ package fileutils_test
 
 import (
 	"github.com/cf-guardian/guardian/kernel/fileutils"
-	"io/ioutil"
+	"github.com/cf-guardian/guardian/test_support"
 	"os"
 	"path/filepath"
 	"testing"
@@ -33,10 +33,10 @@ func TestErrorIds(t *testing.T) {
 func TestCopyFile(t *testing.T) {
 	f := createFileutils()
 
-	td := createTmpDir()
+	td := test_support.CreateTempDir()
 	defer os.RemoveAll(td)
 
-	src := createFile(td, "src.file")
+	src := test_support.CreateFile(td, "src.file")
 	target := filepath.Join(td, "target.file")
 	err := f.Copy(target, src)
 	if err != nil {
@@ -49,7 +49,7 @@ func TestCopyFile(t *testing.T) {
 func TestCopyNonExistent(t *testing.T) {
 	f := createFileutils()
 
-	td := createTmpDir()
+	td := test_support.CreateTempDir()
 	defer os.RemoveAll(td)
 
 	badSrc := filepath.Join(td, "src.file")
@@ -64,10 +64,10 @@ func TestCopyNonExistent(t *testing.T) {
 func TestCopySameFile(t *testing.T) {
 	f := createFileutils()
 
-	td := createTmpDir()
+	td := test_support.CreateTempDir()
 	defer os.RemoveAll(td)
 
-	src := createFile(td, "src.file")
+	src := test_support.CreateFile(td, "src.file")
 	err := f.Copy(src, src)
 	if err != nil {
 		t.Errorf("Failed: %s", err)
@@ -79,17 +79,17 @@ func TestCopySameFile(t *testing.T) {
 func TestCopyFileMode(t *testing.T) {
 	f := createFileutils()
 
-	td := createTmpDir()
+	td := test_support.CreateTempDir()
 	defer os.RemoveAll(td)
 
-	src := createFileWithMode(td, "src.file", os.FileMode(0642))
+	src := test_support.CreateFileWithMode(td, "src.file", os.FileMode(0642))
 	target := filepath.Join(td, "target.file")
 	err := f.Copy(target, src)
 	if err != nil {
 		t.Errorf("Failed: %s", err)
 		return
 	}
-	modeString := fileMode(target).String()
+	modeString := test_support.FileMode(target).String()
 	expModeString := "-rw-r-----"
 	if modeString != expModeString {
 		t.Errorf("Copied file has incorrect file mode %q, expected %q", modeString, expModeString)
@@ -99,15 +99,15 @@ func TestCopyFileMode(t *testing.T) {
 func TestCopyDirectoryToNew(t *testing.T) {
 	f := createFileutils()
 
-	td := createTmpDir()
+	td := test_support.CreateTempDir()
 	defer os.RemoveAll(td)
 
 	srcDir := filepath.Join(td, "source")
 	err := os.Mkdir(srcDir, os.FileMode(0777))
 	check(err)
 
-	createFile(srcDir, "file1")
-	createFile(srcDir, "file2")
+	test_support.CreateFile(srcDir, "file1")
+	test_support.CreateFile(srcDir, "file2")
 
 	targetDir := filepath.Join(td, "target")
 	err = f.Copy(targetDir, srcDir)
@@ -123,7 +123,7 @@ func TestCopyDirectoryToNew(t *testing.T) {
 func TestCopyDirectoryNestedToNew(t *testing.T) {
 	f := createFileutils()
 
-	td := createTmpDir()
+	td := test_support.CreateTempDir()
 	defer os.RemoveAll(td)
 
 	srcDir := filepath.Join(td, "source")
@@ -134,8 +134,8 @@ func TestCopyDirectoryNestedToNew(t *testing.T) {
 	err = os.Mkdir(subDir, os.FileMode(0777))
 	check(err)
 
-	createFile(subDir, "file1")
-	createFile(subDir, "file2")
+	test_support.CreateFile(subDir, "file1")
+	test_support.CreateFile(subDir, "file2")
 
 	targetDir := filepath.Join(td, "target")
 	err = f.Copy(targetDir, srcDir)
@@ -151,15 +151,15 @@ func TestCopyDirectoryNestedToNew(t *testing.T) {
 func TestCopyDirectoryToExisting(t *testing.T) {
 	f := createFileutils()
 
-	td := createTmpDir()
+	td := test_support.CreateTempDir()
 	defer os.RemoveAll(td)
 
 	srcDir := filepath.Join(td, "source")
 	err := os.Mkdir(srcDir, os.FileMode(0777))
 	check(err)
 
-	createFile(srcDir, "file1")
-	createFile(srcDir, "file2")
+	test_support.CreateFile(srcDir, "file1")
+	test_support.CreateFile(srcDir, "file2")
 
 	targetDir := filepath.Join(td, "target")
 	err = os.Mkdir(targetDir, os.FileMode(0777))
@@ -179,17 +179,17 @@ func TestCopyDirectoryToExisting(t *testing.T) {
 func TestCopyDirMode(t *testing.T) {
 	f := createFileutils()
 
-	td := createTmpDir()
+	td := test_support.CreateTempDir()
 	defer os.RemoveAll(td)
 
-	src := createDirWithMode(td, "src.dir", os.FileMode(0642))
+	src := test_support.CreateDirWithMode(td, "src.dir", os.FileMode(0642))
 	target := filepath.Join(td, "target.dir")
 	err := f.Copy(target, src)
 	if err != nil {
 		t.Errorf("Failed: %s", err)
 		return
 	}
-	modeString := fileMode(target).String()
+	modeString := test_support.FileMode(target).String()
 	expModeString := "drw-r-----"
 	if modeString != expModeString {
 		t.Errorf("Copied directory has incorrect file mode %q, expected %q", modeString, expModeString)
@@ -199,7 +199,7 @@ func TestCopyDirMode(t *testing.T) {
 func TestCopyDirInternalSymlink(t *testing.T) {
 	f := createFileutils()
 
-	td := createTmpDir()
+	td := test_support.CreateTempDir()
 	defer os.RemoveAll(td)
 
 	/*
@@ -212,10 +212,10 @@ func TestCopyDirInternalSymlink(t *testing.T) {
 
 	*/
 
-	srcDir := createDir(td, "source")
+	srcDir := test_support.CreateDir(td, "source")
 
-	createFile(srcDir, "file1")
-	dir1 := createDir(srcDir, "dir1")
+	test_support.CreateFile(srcDir, "file1")
+	dir1 := test_support.CreateDir(srcDir, "dir1")
 
 	srcLink := filepath.Join(dir1, "link")
 	err := os.Symlink(srcDir, srcLink)
@@ -239,7 +239,7 @@ func TestCopyDirInternalSymlink(t *testing.T) {
 		return
 	}
 
-	if !sameFile(targetDir, filepath.Join(targetDir1, linkTarget)) {
+	if !test_support.SameFile(targetDir, filepath.Join(targetDir1, linkTarget)) {
 		t.Errorf("Symlink %s does not point to expected file %s", targetLink, targetDir)
 		return
 	}
@@ -248,7 +248,7 @@ func TestCopyDirInternalSymlink(t *testing.T) {
 func TestCopyDirInternalFileSymlink(t *testing.T) {
 	f := createFileutils()
 
-	td := createTmpDir()
+	td := test_support.CreateTempDir()
 	defer os.RemoveAll(td)
 
 	/*
@@ -260,9 +260,9 @@ func TestCopyDirInternalFileSymlink(t *testing.T) {
 
 	*/
 
-	srcDir := createDir(td, "source")
+	srcDir := test_support.CreateDir(td, "source")
 
-	file1 := createFile(srcDir, "file1")
+	file1 := test_support.CreateFile(srcDir, "file1")
 	fileLink := filepath.Join(srcDir, "link")
 	err := os.Symlink(file1, fileLink)
 	check(err)
@@ -285,7 +285,7 @@ func TestCopyDirInternalFileSymlink(t *testing.T) {
 		return
 	}
 
-	if !sameFile(targetFile1, filepath.Join(targetDir, linkTarget)) {
+	if !test_support.SameFile(targetFile1, filepath.Join(targetDir, linkTarget)) {
 		t.Errorf("Symlink %s does not point to expected file %s", targetLink, targetFile1)
 		return
 	}
@@ -294,7 +294,7 @@ func TestCopyDirInternalFileSymlink(t *testing.T) {
 func TestCopyDirExternalSymlink(t *testing.T) {
 	f := createFileutils()
 
-	td := createTmpDir()
+	td := test_support.CreateTempDir()
 	defer os.RemoveAll(td)
 
 	/*
@@ -305,7 +305,7 @@ func TestCopyDirExternalSymlink(t *testing.T) {
 
 	*/
 
-	srcDir := createDir(td, "source")
+	srcDir := test_support.CreateDir(td, "source")
 
 	tdLink := filepath.Join(srcDir, "link")
 	err := os.Symlink(td, tdLink)
@@ -322,7 +322,7 @@ func TestCopyDirExternalSymlink(t *testing.T) {
 func TestCopyDirInternalRelativeSymlink(t *testing.T) {
 	f := createFileutils()
 
-	td := createTmpDir()
+	td := test_support.CreateTempDir()
 	defer os.RemoveAll(td)
 
 	/*
@@ -334,7 +334,7 @@ func TestCopyDirInternalRelativeSymlink(t *testing.T) {
 
 	*/
 
-	srcDir := createDir(td, "source")
+	srcDir := test_support.CreateDir(td, "source")
 
 	tdLink := filepath.Join(srcDir, "link")
 	err := os.Symlink("../source", tdLink)
@@ -351,7 +351,7 @@ func TestCopyDirInternalRelativeSymlink(t *testing.T) {
 func TestCopyDirExternalRelativeSymlink(t *testing.T) {
 	f := createFileutils()
 
-	td := createTmpDir()
+	td := test_support.CreateTempDir()
 	defer os.RemoveAll(td)
 
 	/*
@@ -364,8 +364,8 @@ func TestCopyDirExternalRelativeSymlink(t *testing.T) {
 
 	*/
 
-	aDir := createDir(td, "a")
-	srcDir := createDir(aDir, "source")
+	aDir := test_support.CreateDir(td, "a")
+	srcDir := test_support.CreateDir(aDir, "source")
 
 	tdLink := filepath.Join(srcDir, "link")
 	err := os.Symlink("..", tdLink)
@@ -382,10 +382,10 @@ func TestCopyDirExternalRelativeSymlink(t *testing.T) {
 func TestCopyFileSymlink(t *testing.T) {
 	f := createFileutils()
 
-	td := createTmpDir()
+	td := test_support.CreateTempDir()
 	defer os.RemoveAll(td)
 
-	src := createFile(td, "src.file")
+	src := test_support.CreateFile(td, "src.file")
 	link := filepath.Join(td, "link")
 	err := os.Symlink(src, link)
 	check(err)
@@ -400,10 +400,10 @@ func TestCopyFileSymlink(t *testing.T) {
 func TestCopyFileSameSymlink(t *testing.T) {
 	f := createFileutils()
 
-	td := createTmpDir()
+	td := test_support.CreateTempDir()
 	defer os.RemoveAll(td)
 
-	src := createFile(td, "src.file")
+	src := test_support.CreateFile(td, "src.file")
 	link := filepath.Join(td, "link")
 	err := os.Symlink(src, link)
 	check(err)
@@ -418,37 +418,6 @@ func createFileutils() fileutils.Fileutils {
 	return fileutils.New()
 }
 
-func createDir(td string, dirName string) string {
-	return createDirWithMode(td, dirName, os.FileMode(0777))
-}
-
-func createDirWithMode(td string, dirName string, mode os.FileMode) string {
-	fp := filepath.Join(td, dirName)
-	err := os.Mkdir(fp, mode)
-	check(err)
-	return fp
-}
-
-func createFile(td string, fileName string) string {
-	return createFileWithMode(td, fileName, os.FileMode(0666))
-}
-
-func createFileWithMode(td string, fileName string, mode os.FileMode) string {
-	fp := filepath.Join(td, fileName)
-	f, err := os.OpenFile(fp, os.O_CREATE|os.O_EXCL|os.O_WRONLY, mode)
-	check(err)
-	_, err = f.WriteString("test contents")
-	check(err)
-	check(f.Close())
-	return fp
-}
-
-func createTmpDir() string {
-	tPath, err := ioutil.TempDir("/tmp", "fileutils_test-")
-	check(err)
-	return tPath
-}
-
 func check(err error) {
 	if err != nil {
 		panic(err)
@@ -456,7 +425,7 @@ func check(err error) {
 }
 
 func checkDirectory(path string, t *testing.T) {
-	if !fileMode(path).IsDir() {
+	if !test_support.FileMode(path).IsDir() {
 		t.Errorf("Not a directory: %q", path)
 	}
 }
@@ -470,18 +439,4 @@ func checkFile(target string, expContents string, t *testing.T) {
 	if actualContents := string(buf[:n]); actualContents != expContents {
 		t.Errorf("Contents %q not expected value %q", actualContents, expContents)
 	}
-}
-
-func fileMode(path string) os.FileMode {
-	fi, err := os.Lstat(path)
-	check(err)
-	return fi.Mode()
-}
-
-func sameFile(p1 string, p2 string) bool {
-	fi1, err := os.Stat(p1)
-	check(err)
-	fi2, err := os.Stat(p2)
-	check(err)
-	return os.SameFile(fi1, fi2)
 }
