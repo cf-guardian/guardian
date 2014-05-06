@@ -43,6 +43,11 @@ go test -logtostderr=true
 ````
 See the [glog documentation](http://godoc.org/github.com/golang/glog) for further information.
 
+## Repository Layout
+
+The directories in this repository consist mostly of runtime code, tests (`*_test.go`), and examples (`*example*.go`). Directories named `mock_*` contain mock implementations of interfaces for use in testing.
+
+In addition, the `development` directory contains scripts used during development and the `test_support` directory contains shared functions and custom matchers used by tests.
 
 ## Development Environment Setup
 
