@@ -101,7 +101,11 @@ func TestGenerate(t *testing.T) {
 		return
 	}
 
-	_ = root
+	rootPrefix := filepath.Join(tempDir, "mnt-")
+	if !strings.HasPrefix(root, rootPrefix) {
+		t.Errorf("root was %s, but expected it to have prefix %s", root, rootPrefix)
+		return
+	}
 }
 
 type stringPrefixMatcher struct {
