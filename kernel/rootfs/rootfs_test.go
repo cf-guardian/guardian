@@ -18,39 +18,27 @@ package rootfs_test
 
 import (
 	"code.google.com/p/gomock/gomock"
+	"fmt"
 	"github.com/cf-guardian/guardian/gerror"
 	"github.com/cf-guardian/guardian/kernel/fileutils"
 	"github.com/cf-guardian/guardian/kernel/fileutils/mock_fileutils"
 	"github.com/cf-guardian/guardian/kernel/rootfs"
+	"github.com/cf-guardian/guardian/kernel/syscall/mock_syscall"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"testing"
 )
 
-type stubSyscall struct {
-	callCount int
-}
-
-func (ss *stubSyscall) BindMountReadOnly(source string, mountPoint string) error {
-	return nil
-}
-
-func (ss *stubSyscall) BindMountReadWrite(source string, mountPoint string) error {
-	return nil
-}
-
-func (ss *stubSyscall) Unmount(mountPoint string) error {
-	return nil
-}
-
 func TestNonExistentReadWriteBaseDir(t *testing.T) {
-	mockCtrl, mockFileUtils := setupMocks(t)
+	mockCtrl, mockFileUtils, mockSyscallFS := setupMocks(t)
 	defer mockCtrl.Finish()
 
 	mockFileUtils.EXPECT().Filemode("/nosuch").Return(os.FileMode(0), gerror.New(fileutils.ErrFileNotFound, "test error"))
 
-	rfs, gerr := rootfs.NewRootFS(&stubSyscall{}, mockFileUtils, "/nosuch")
+	rfs, gerr := rootfs.NewRootFS(mockSyscallFS, mockFileUtils, "/nosuch")
 	if rfs != nil || !gerr.EqualTag(rootfs.ErrRwBaseDirMissing) {
 		t.Errorf("Incorrect return values (%s, %s)", rfs, gerr)
 		return
@@ -58,14 +46,14 @@ func TestNonExistentReadWriteBaseDir(t *testing.T) {
 }
 
 func TestNonDirReadWriteBaseDir(t *testing.T) {
-	mockCtrl, mockFileUtils := setupMocks(t)
+	mockCtrl, mockFileUtils, mockSyscallFS := setupMocks(t)
 	defer mockCtrl.Finish()
 
 	tempDir := createTempDir()
 	filePath := createFile(tempDir, "testFile")
 	mockFileUtils.EXPECT().Filemode(filePath).Return(os.FileMode(0700), nil)
 
-	rfs, gerr := rootfs.NewRootFS(&stubSyscall{}, mockFileUtils, filePath)
+	rfs, gerr := rootfs.NewRootFS(mockSyscallFS, mockFileUtils, filePath)
 	if rfs != nil || !gerr.EqualTag(rootfs.ErrRwBaseDirIsFile) {
 		t.Errorf("Incorrect return values (%s, %s)", rfs, gerr)
 		return
@@ -73,14 +61,14 @@ func TestNonDirReadWriteBaseDir(t *testing.T) {
 }
 
 func TestReadOnlyReadWriteBaseDir(t *testing.T) {
-	mockCtrl, mockFileUtils := setupMocks(t)
+	mockCtrl, mockFileUtils, mockSyscallFS := setupMocks(t)
 	defer mockCtrl.Finish()
 
 	tempDir := createTempDir()
 	dirPath := createDirWithMode(tempDir, "test-rootfs", os.FileMode(0400))
 	mockFileUtils.EXPECT().Filemode(dirPath).Return(os.ModeDir|os.FileMode(0100), nil)
 
-	rfs, gerr := rootfs.NewRootFS(&stubSyscall{}, mockFileUtils, dirPath)
+	rfs, gerr := rootfs.NewRootFS(mockSyscallFS, mockFileUtils, dirPath)
 	if rfs != nil || !gerr.EqualTag(rootfs.ErrRwBaseDirNotRw) {
 		t.Errorf("Incorrect return values (%s, %s)", rfs, gerr)
 		return
@@ -88,31 +76,68 @@ func TestReadOnlyReadWriteBaseDir(t *testing.T) {
 }
 
 func TestGenerate(t *testing.T) {
-	mockCtrl, mockFileUtils := setupMocks(t)
+	mockCtrl, mockFileUtils, mockSyscallFS := setupMocks(t)
 	defer mockCtrl.Finish()
 
 	tempDir := createTempDir()
 	mockFileUtils.EXPECT().Filemode(tempDir).Return(os.ModeDir|os.FileMode(0700), nil)
-	rfs, gerr := rootfs.NewRootFS(&stubSyscall{}, mockFileUtils, tempDir)
+	rfs, gerr := rootfs.NewRootFS(mockSyscallFS, mockFileUtils, tempDir)
 	if gerr != nil {
 		t.Errorf("%s", gerr)
 		return
 	}
-	os.MkdirAll("/tmp/guardian-test", 0700)
-	prototype, err := ioutil.TempDir("/tmp/guardian-test", "test-rootfs")
-	if err != nil {
-		t.Errorf("%s", err)
-		return
-	}
-	os.MkdirAll(prototype, 0700)
+	prototypeDir := filepath.Join(tempDir, "test-prototype")
 
-	root, err := rfs.Generate(prototype)
-	if err != nil {
-		t.Errorf("%s", err)
+	mockSyscallFS.EXPECT().BindMountReadOnly(prototypeDir, &stringPrefixMatcher{filepath.Join(tempDir, "mnt")})
+
+	dirs := []string{`proc`, `dev`, `etc`, `home`, `sbin`, `var`, `tmp`}
+	for _, dir := range dirs {
+		mockSyscallFS.EXPECT().BindMountReadWrite(&stringRegexMatcher{filepath.Join(tempDir, "tmp-rootfs-.*", dir)}, &stringRegexMatcher{filepath.Join(tempDir, "mnt-.*", dir)})
+	}
+
+	root, gerr := rfs.Generate(prototypeDir)
+	if gerr != nil {
+		t.Errorf("%s", gerr)
 		return
 	}
 
 	_ = root
+}
+
+type stringPrefixMatcher struct {
+	prefix string
+}
+
+func (m *stringPrefixMatcher) Matches(x interface{}) bool {
+	if x, ok := x.(string); ok {
+		return strings.HasPrefix(x, m.prefix)
+	} else {
+		return false
+	}
+}
+
+func (m *stringPrefixMatcher) String() string {
+	return fmt.Sprintf("is a string with prefix %s", m.prefix)
+}
+
+type stringRegexMatcher struct {
+	regex string
+}
+
+func (m *stringRegexMatcher) Matches(x interface{}) bool {
+	if x, ok := x.(string); ok {
+		if matched, err := regexp.MatchString(m.regex, x); err == nil {
+			return matched
+		} else {
+			return false
+		}
+	} else {
+		return false
+	}
+}
+
+func (m *stringRegexMatcher) String() string {
+	return fmt.Sprintf("is a string which matches regular expression %s", m.regex)
 }
 
 func createTempDir() string {
@@ -121,10 +146,11 @@ func createTempDir() string {
 	return tempDir
 }
 
-func setupMocks(t *testing.T) (*gomock.Controller, *mock_fileutils.MockFileutils) {
+func setupMocks(t *testing.T) (*gomock.Controller, *mock_fileutils.MockFileutils, *mock_syscall.MockSyscall_FS) {
 	mockCtrl := gomock.NewController(t)
 	mockFileUtils := mock_fileutils.NewMockFileutils(mockCtrl)
-	return mockCtrl, mockFileUtils
+	mockSyscallFS := mock_syscall.NewMockSyscall_FS(mockCtrl)
+	return mockCtrl, mockFileUtils, mockSyscallFS
 }
 
 // TODO: Remove duplication with fileutils_test.
