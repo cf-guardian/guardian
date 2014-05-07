@@ -108,13 +108,13 @@ func TestGenerate(t *testing.T) {
 	}
 }
 
-func TestGenerateBindMountReadWriteError(t *testing.T) {
+func TestGenerateBackoutAfterBindMountReadWriteError(t *testing.T) {
 	for i := 0; i <= 6; i++ {
-		testGenerateBindMountReadWriteError(i, t)
+		testGenerateBackoutAfterBindMountReadWriteError(i, t)
 	}
 }
 
-func testGenerateBindMountReadWriteError(i int, t *testing.T) {
+func testGenerateBackoutAfterBindMountReadWriteError(i int, t *testing.T) {
 	mockCtrl, mockFileUtils, mockSyscallFS := setupMocks(t)
 	defer mockCtrl.Finish()
 
