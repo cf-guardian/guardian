@@ -18,6 +18,7 @@ package test_support
 
 import (
 	"fmt"
+	"github.com/golang/glog"
 	"regexp"
 	"strings"
 )
@@ -32,8 +33,13 @@ type stringPrefixMatcher struct {
 
 func (m *stringPrefixMatcher) Matches(x interface{}) bool {
 	if x, ok := x.(string); ok {
-		return strings.HasPrefix(x, m.prefix)
+		matched := strings.HasPrefix(x, m.prefix)
+		if glog.V(3) {
+			glog.Infof("Result of HasPrefix(%q, %q) is %v", x, m.prefix, matched)
+		}
+		return matched
 	} else {
+		glog.Errorf("Not a string: %v", x)
 		return false
 	}
 }
@@ -53,11 +59,16 @@ type stringRegexMatcher struct {
 func (m *stringRegexMatcher) Matches(x interface{}) bool {
 	if x, ok := x.(string); ok {
 		if matched, err := regexp.MatchString(m.regex, x); err == nil {
+			if glog.V(3) {
+				glog.Infof("Result of MatchString(%q, %q) is %v", m.regex, x, matched)
+			}
 			return matched
 		} else {
+			glog.Errorf("Invalid regular expression %q: %s", m.regex, err)
 			return false
 		}
 	} else {
+		glog.Errorf("Not a string: %v", x)
 		return false
 	}
 }

@@ -18,6 +18,7 @@ package rootfs_test
 
 import (
 	"code.google.com/p/gomock/gomock"
+	"errors"
 	"github.com/cf-guardian/guardian/gerror"
 	"github.com/cf-guardian/guardian/kernel/fileutils"
 	"github.com/cf-guardian/guardian/kernel/fileutils/mock_fileutils"
@@ -28,6 +29,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"github.com/golang/glog"
 )
 
 func TestNonExistentReadWriteBaseDir(t *testing.T) {
@@ -102,6 +104,49 @@ func TestGenerate(t *testing.T) {
 	rootPrefix := filepath.Join(tempDir, "mnt-")
 	if !strings.HasPrefix(root, rootPrefix) {
 		t.Errorf("root was %s, but expected it to have prefix %s", root, rootPrefix)
+		return
+	}
+}
+
+func TestGenerateBindMountReadWriteError(t *testing.T) {
+	for i := 0; i <= 6; i++ {
+		testGenerateBindMountReadWriteError(i, t)
+	}
+}
+
+func testGenerateBindMountReadWriteError(i int, t *testing.T) {
+	mockCtrl, mockFileUtils, mockSyscallFS := setupMocks(t)
+	defer mockCtrl.Finish()
+
+	tempDir := test_support.CreateTempDir()
+	glog.Info(tempDir)
+	mockFileUtils.EXPECT().Filemode(tempDir).Return(os.ModeDir|os.FileMode(0700), nil)
+	rfs, gerr := rootfs.NewRootFS(mockSyscallFS, mockFileUtils, tempDir)
+	if gerr != nil {
+		t.Errorf("%s", gerr)
+		return
+	}
+	prototypeDir := filepath.Join(tempDir, "test-prototype")
+
+	mainMountPointMatcher := test_support.NewStringRegexMatcher(filepath.Join(tempDir, `mnt-[\d]*$`))
+	mockSyscallFS.EXPECT().BindMountReadOnly(prototypeDir, mainMountPointMatcher)
+	mockSyscallFS.EXPECT().Unmount(mainMountPointMatcher)
+
+	dirs := []string{`proc`, `dev`, `etc`, `home`, `sbin`, `var`, `tmp`}
+	for j := 0; j < i; j++ {
+		dir := dirs[j]
+		mountPointMatcher := test_support.NewStringRegexMatcher(filepath.Join(tempDir, `mnt-[\d]*`, dir))
+		mockSyscallFS.EXPECT().BindMountReadWrite(test_support.NewStringRegexMatcher(filepath.Join(tempDir, "tmp-rootfs-.*", dir)), mountPointMatcher)
+		mockSyscallFS.EXPECT().Unmount(mountPointMatcher)
+	}
+
+	failingDir := dirs[i]
+	mockSyscallFS.EXPECT().BindMountReadWrite(test_support.NewStringRegexMatcher(filepath.Join(tempDir, "tmp-rootfs-.*", failingDir)),
+		test_support.NewStringRegexMatcher(filepath.Join(tempDir, "mnt-.*", failingDir))).Return(errors.New("test error"))
+
+	root, gerr := rfs.Generate(prototypeDir)
+	if gerr == nil {
+		t.Errorf("Unexpected return values %s, %s", root, gerr)
 		return
 	}
 }

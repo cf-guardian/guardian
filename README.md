@@ -36,11 +36,17 @@ Errors returned from Guardian functions and methods include stack traces so that
 
 ### Logging
 
-Logging is performed using the [glog](https://github.com/golang/glog) package (an external dependency). Logs may be directed to standard error by setting the flag `logtostderr` to `true` on the go invocation, as in this example:
+Logging is performed using the [glog](https://github.com/golang/glog) package (an external dependency).
+
+Three levels of verbosity are used: 0 for warnings, 1 for information, 2 for debug, and 3 for detailed debug (sometimes known as "trace").
+
+Logs may be directed to standard error by setting the flag `logtostderr` to `true` on the go invocation, as in this example:
 
 ````
-go test -logtostderr=true
+go test -logtostderr=true -vmodule=*=2
 ````
+Note: the glog `-v` flag clashes with the boolean `-v` flag of `go test` and so the logging verbosity should be set during testing using `-vmodule=*=`.
+
 See the [glog documentation](http://godoc.org/github.com/golang/glog) for further information.
 
 ## Repository Layout
