@@ -37,6 +37,7 @@ const (
 	ErrCreateMountDir
 	ErrBindMountRoot
 	ErrBindMountSubdir
+	ErrUnmountSubdir
 	ErrOverlayTempDir
 	ErrOverlayDir
 )
@@ -225,7 +226,7 @@ func (rfs *rootfs) unmountOverlayDirectory(dir string, root string) gerror.Gerro
 	mntPath := filepath.Join(root, dir)
 	err := rfs.sc.Unmount(mntPath)
 	if err != nil {
-		return gerror.NewFromError(ErrBindMountSubdir, err)
+		return gerror.NewFromError(ErrUnmountSubdir, err)
 	}
 	return nil
 }
