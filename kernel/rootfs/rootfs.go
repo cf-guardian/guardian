@@ -151,7 +151,9 @@ func (rfs *rootfs) Generate(prototype string) (root string, gerr gerror.Gerror) 
 	if gerr == nil {
 		err := rfs.sc.BindMountReadOnly(prototype, root)
 		undo := func() {
-			glog.Infof("unmounting %q", root)
+			if glog.V(1) {
+				glog.Infof("unmounting %q", root)
+			}
 			if e := rfs.sc.Unmount(root); e != nil {
 				glog.Warningf("Encountered %q while recovering from %q", e, gerr)
 			}
@@ -167,7 +169,9 @@ func (rfs *rootfs) Generate(prototype string) (root string, gerr gerror.Gerror) 
 }
 
 func (rfs *rootfs) overlay(root string, rwPath string) gerror.Gerror {
-	glog.Infof("overlay(%q, %q)", root, rwPath)
+	if glog.V(2) {
+		glog.Infof("overlay(%q, %q)", root, rwPath)
+	}
 	dirs := []string{`proc`, `dev`, `etc`, `home`, `sbin`, `var`, `tmp`}
 
 	tmpDir := filepath.Join(rwPath, `tmp`)
@@ -189,7 +193,9 @@ func (rfs *rootfs) overlay(root string, rwPath string) gerror.Gerror {
 }
 
 func (rfs *rootfs) overlayDirectory(dir string, root string, rwPath string) gerror.Gerror {
-	glog.Infof("overlayDirectory(%q, %q, %q)", dir, root, rwPath)
+	if glog.V(2) {
+		glog.Infof("overlayDirectory(%q, %q, %q)", dir, root, rwPath)
+	}
 	dirPath := filepath.Join(rwPath, dir)
 	mntPath := filepath.Join(root, dir)
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
@@ -199,26 +205,24 @@ func (rfs *rootfs) overlayDirectory(dir string, root string, rwPath string) gerr
 			err = os.MkdirAll(dirPath, tempDirMode)
 		}
 		if err != nil {
-			gerr := gerror.NewFromError(ErrOverlayDir, err)
-			glog.Errorf("overlayDirectory returning %s", gerr)
-			return gerr
+			return gerror.NewFromError(ErrOverlayDir, err)
 		}
 	}
-
-	glog.Infof("BindMountReadWrite(%q, %q)", dirPath, mntPath)
+	if glog.V(2) {
+		glog.Infof("BindMountReadWrite(%q, %q)", dirPath, mntPath)
+	}
 	err := rfs.sc.BindMountReadWrite(dirPath, mntPath)
 	if err != nil {
-		gerr := gerror.NewFromError(ErrBindMountSubdir, err)
-		glog.Errorf("overlayDirectory returning %s", gerr)
-		return gerr
+		return gerror.NewFromError(ErrBindMountSubdir, err)
 	}
 	return nil
 }
 
 func (rfs *rootfs) unmountOverlayDirectory(dir string, root string) gerror.Gerror {
-	glog.Infof("unmountOverlayDirectory(%q, %q)", dir, root)
+	if glog.V(2) {
+		glog.Infof("unmountOverlayDirectory(%q, %q)", dir, root)
+	}
 	mntPath := filepath.Join(root, dir)
-	glog.Infof("Unmount(%q)", mntPath)
 	err := rfs.sc.Unmount(mntPath)
 	if err != nil {
 		return gerror.NewFromError(ErrBindMountSubdir, err)

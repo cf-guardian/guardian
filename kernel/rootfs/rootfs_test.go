@@ -29,7 +29,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"github.com/golang/glog"
 )
 
 func TestNonExistentReadWriteBaseDir(t *testing.T) {
@@ -119,7 +118,6 @@ func testGenerateBackoutAfterBindMountReadWriteError(i int, t *testing.T) {
 	defer mockCtrl.Finish()
 
 	tempDir := test_support.CreateTempDir()
-	glog.Info(tempDir)
 	mockFileUtils.EXPECT().Filemode(tempDir).Return(os.ModeDir|os.FileMode(0700), nil)
 	rfs, gerr := rootfs.NewRootFS(mockSyscallFS, mockFileUtils, tempDir)
 	if gerr != nil {

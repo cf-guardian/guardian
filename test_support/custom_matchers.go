@@ -34,7 +34,7 @@ type stringPrefixMatcher struct {
 func (m *stringPrefixMatcher) Matches(x interface{}) bool {
 	if x, ok := x.(string); ok {
 		matched := strings.HasPrefix(x, m.prefix)
-		if glog.V(3) {
+		if glog.V(2) {
 			glog.Infof("Result of HasPrefix(%q, %q) is %v", x, m.prefix, matched)
 		}
 		return matched
@@ -59,7 +59,7 @@ type stringRegexMatcher struct {
 func (m *stringRegexMatcher) Matches(x interface{}) bool {
 	if x, ok := x.(string); ok {
 		if matched, err := regexp.MatchString(m.regex, x); err == nil {
-			if glog.V(3) {
+			if glog.V(2) {
 				glog.Infof("Result of MatchString(%q, %q) is %v", m.regex, x, matched)
 			}
 			return matched

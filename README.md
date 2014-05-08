@@ -38,7 +38,7 @@ Errors returned from Guardian functions and methods include stack traces so that
 
 Logging is performed using the [glog](https://github.com/golang/glog) package (an external dependency).
 
-Three levels of verbosity are used: 0 for warnings, 1 for information, 2 for debug, and 3 for detailed debug (sometimes known as "trace").
+`glog` has four logging levels: informational (`glog.Info()`), warning (`glog.Warning()`), error (`glog.Error()`), and fatal (`glog.Fatal()`). Additionally, `glog` has a verbosity level  which is a non-negative integer with a default value of `0`. Guardian uses informational logs with verbosity level `0` to log important events and informational logs with verbosity levels `1` and higher for debugging.
 
 Logs may be directed to standard error by setting the flag `logtostderr` to `true` on the go invocation, as in this example:
 
