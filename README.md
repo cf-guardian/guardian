@@ -20,7 +20,7 @@ These objectives will be achieved through the following practices:
 1. Fail rather than degrade function.
 1. Operating system dependencies should be isolated and carefully managed to simplify porting.
 1. Use pure Go for maintainability. Avoid scripting (even in Go) and C code.
-1. Instrument code to capture failure diagnostics including stack traces.
+1. Instrument code to capture failure diagnostics including error identifiers (described below) and stack traces.
 
 ## Documentation
 
@@ -32,7 +32,7 @@ If this hasn't been refreshed for a while, feel free to click the "Refresh now" 
 
 ### Errors
 
-Errors returned from Guardian functions and methods include stack traces so that the point of failure can easily be determined. The [gerror](gerror) package is used to construct errors.
+Errors returned from Guardian functions and methods include error identifiers to uniquely identify each kind of failure and stack traces so that the point of failure can easily be determined. The [gerror](gerror) package is used to construct errors.
 
 ### Logging
 
