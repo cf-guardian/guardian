@@ -17,9 +17,18 @@
 package rootfs_test
 
 import (
+	"github.com/cf-guardian/guardian/kernel/fileutils"
+	"github.com/cf-guardian/guardian/kernel/rootfs"
+	"github.com/cf-guardian/guardian/kernel/syscall/syscall_linux"
 	"testing"
 )
 
 func TestNonExistentReadWriteBaseDir(t *testing.T) {
-	t.Fail()
+	syscallFS := syscall_linux.New()
+	futils := fileutils.New()
+	rfs, gerr := rootfs.NewRootFS(syscallFS, futils, "/nosuch")
+	if rfs != nil || !gerr.EqualTag(rootfs.ErrRwBaseDirMissing) {
+		t.Errorf("Incorrect return values (%s, %s)", rfs, gerr)
+		return
+	}
 }

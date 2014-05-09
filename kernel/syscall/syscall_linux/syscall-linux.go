@@ -20,14 +20,14 @@ Package syscall-linux wraps the standard syscall package for Linux.
 package syscall_linux
 
 import (
-	"github.com/cf-guardian/guardian/kernel/syscall"
+	syscall "github.com/cf-guardian/guardian/kernel/syscall"
 	trueSyscall "syscall"
 )
 
 type syscallWrapper struct {
 }
 
-func New() Syscall {
+func New() syscall.Syscall_FS {
 	return new(syscallWrapper)
 }
 
