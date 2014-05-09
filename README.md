@@ -89,14 +89,13 @@ beginning of a new environment variable called `GOPATH`. You might want to put t
 
 ### Development scripts
 
-The directory `development/scripts` is there for simple (bash) shell scripts that may make life a little easier in our context.
+The directory `development/scripts` is there for simple (bash) shell scripts that may make life a little easier in our context:
 
-The only one currently implemented is called `gosub`, designed to run a `go` command in all subdirectories of the current directory that
-have a `*.go` file in them. Typical usage is `gosub build`, or `gosub fmt build`. This saves being driven by a top-level `go` package with
-explicit dependencies.
+* `gosub` is designed to run a `go` command in all subdirectories of the current directory that have a `*.go` file in them. Typical usage is `gosub build`, or `gosub fmt build`. This saves being driven by a top-level `go` package with explicit dependencies.
 
-`gosub` is limited to single word go commands. `gosub fmt build` would issue `go fmt; go build` in each directory in turn.
-`gosub test` is quite useful to run all tests in immediate subdirectories.
+    `gosub` is limited to single word go commands. `gosub fmt build` would issue `go fmt; go build` in each directory in turn. `gosub test` is quite useful to run all tests in immediate subdirectories.
+
+* `govet` runs `go tool vet` with appropriate options against a single directory passed as a parameter to the script.
 
 ## Testing
 
@@ -127,7 +126,7 @@ go fmt ./...
 To reformat code before committing it to git, install the pre-commit hook as described above.
 
 
-Also, you can [lint](http://go-lint.appspot.com/github.com/cf-guardian/guardian) the code if you like.
+Also, you can run `go vet` (a `govet` script is provided in `development/scripts`) and [lint](http://go-lint.appspot.com/github.com/cf-guardian/guardian) against the code if you like.
 
 ## Contributing
 [Pull requests](http://help.github.com/send-pull-requests) are welcome; see the [contributor guidelines](CONTRIBUTING.md) for details.

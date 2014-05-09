@@ -1,0 +1,3 @@
+#!/bin/bash -e
+
+go tool vet -all=true -shadow -printfuncs=gerror.Newf:1,gerror.New:1 "$@"
