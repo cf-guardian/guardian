@@ -28,12 +28,12 @@ func CreateTempDir() string {
 	return tempDir
 }
 
-func CreateFile(td string, fileName string) string {
-	return CreateFileWithMode(td, fileName, os.FileMode(0666))
+func CreateFile(path string, fileName string) string {
+	return CreateFileWithMode(path, fileName, os.FileMode(0666))
 }
 
-func CreateFileWithMode(td string, fileName string, mode os.FileMode) string {
-	fp := filepath.Join(td, fileName)
+func CreateFileWithMode(path string, fileName string, mode os.FileMode) string {
+	fp := filepath.Join(path, fileName)
 	f, err := os.OpenFile(fp, os.O_CREATE|os.O_EXCL|os.O_WRONLY, mode)
 	check(err)
 	_, err = f.WriteString("test contents")
@@ -42,12 +42,12 @@ func CreateFileWithMode(td string, fileName string, mode os.FileMode) string {
 	return fp
 }
 
-func CreateDir(td string, dirName string) string {
-	return CreateDirWithMode(td, dirName, os.FileMode(0777))
+func CreateDir(path string, dirName string) string {
+	return CreateDirWithMode(path, dirName, os.FileMode(0777))
 }
 
-func CreateDirWithMode(td string, dirName string, mode os.FileMode) string {
-	fp := filepath.Join(td, dirName)
+func CreateDirWithMode(path string, dirName string, mode os.FileMode) string {
+	fp := filepath.Join(path, dirName)
 	err := os.Mkdir(fp, mode)
 	check(err)
 	return fp

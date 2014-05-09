@@ -7,53 +7,53 @@ import (
 	gomock "code.google.com/p/gomock/gomock"
 )
 
-// Mock of Syscall_FS interface
-type MockSyscall_FS struct {
+// Mock of SyscallFS interface
+type MockSyscallFS struct {
 	ctrl     *gomock.Controller
-	recorder *_MockSyscall_FSRecorder
+	recorder *_MockSyscallFSRecorder
 }
 
-// Recorder for MockSyscall_FS (not exported)
-type _MockSyscall_FSRecorder struct {
-	mock *MockSyscall_FS
+// Recorder for MockSyscallFS (not exported)
+type _MockSyscallFSRecorder struct {
+	mock *MockSyscallFS
 }
 
-func NewMockSyscall_FS(ctrl *gomock.Controller) *MockSyscall_FS {
-	mock := &MockSyscall_FS{ctrl: ctrl}
-	mock.recorder = &_MockSyscall_FSRecorder{mock}
+func NewMockSyscallFS(ctrl *gomock.Controller) *MockSyscallFS {
+	mock := &MockSyscallFS{ctrl: ctrl}
+	mock.recorder = &_MockSyscallFSRecorder{mock}
 	return mock
 }
 
-func (_m *MockSyscall_FS) EXPECT() *_MockSyscall_FSRecorder {
+func (_m *MockSyscallFS) EXPECT() *_MockSyscallFSRecorder {
 	return _m.recorder
 }
 
-func (_m *MockSyscall_FS) BindMountReadWrite(source string, mountPoint string) error {
+func (_m *MockSyscallFS) BindMountReadWrite(source string, mountPoint string) error {
 	ret := _m.ctrl.Call(_m, "BindMountReadWrite", source, mountPoint)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockSyscall_FSRecorder) BindMountReadWrite(arg0, arg1 interface{}) *gomock.Call {
+func (_mr *_MockSyscallFSRecorder) BindMountReadWrite(arg0, arg1 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "BindMountReadWrite", arg0, arg1)
 }
 
-func (_m *MockSyscall_FS) BindMountReadOnly(source string, mountPoint string) error {
+func (_m *MockSyscallFS) BindMountReadOnly(source string, mountPoint string) error {
 	ret := _m.ctrl.Call(_m, "BindMountReadOnly", source, mountPoint)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockSyscall_FSRecorder) BindMountReadOnly(arg0, arg1 interface{}) *gomock.Call {
+func (_mr *_MockSyscallFSRecorder) BindMountReadOnly(arg0, arg1 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "BindMountReadOnly", arg0, arg1)
 }
 
-func (_m *MockSyscall_FS) Unmount(mountPoint string) error {
+func (_m *MockSyscallFS) Unmount(mountPoint string) error {
 	ret := _m.ctrl.Call(_m, "Unmount", mountPoint)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-func (_mr *_MockSyscall_FSRecorder) Unmount(arg0 interface{}) *gomock.Call {
+func (_mr *_MockSyscallFSRecorder) Unmount(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Unmount", arg0)
 }

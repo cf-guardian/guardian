@@ -149,9 +149,9 @@ func testGenerateBackoutAfterBindMountReadWriteError(i int, t *testing.T) {
 	}
 }
 
-func setupMocks(t *testing.T) (*gomock.Controller, *mock_fileutils.MockFileutils, *mock_syscall.MockSyscall_FS) {
+func setupMocks(t *testing.T) (*gomock.Controller, *mock_fileutils.MockFileutils, *mock_syscall.MockSyscallFS) {
 	mockCtrl := gomock.NewController(t)
 	mockFileUtils := mock_fileutils.NewMockFileutils(mockCtrl)
-	mockSyscallFS := mock_syscall.NewMockSyscall_FS(mockCtrl)
+	mockSyscallFS := mock_syscall.NewMockSyscallFS(mockCtrl)
 	return mockCtrl, mockFileUtils, mockSyscallFS
 }

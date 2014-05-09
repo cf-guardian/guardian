@@ -20,15 +20,32 @@ Package syscall-linux wraps the standard syscall package for Linux.
 package syscall_linux
 
 import (
+	"github.com/cf-guardian/guardian/gerror"
 	syscall "github.com/cf-guardian/guardian/kernel/syscall"
+	"os"
 	trueSyscall "syscall"
+)
+
+// ImplErrorId is used for error ids relating to the implementation of this package.
+type ImplErrorId int
+
+const (
+	ErrNotRoot ImplErrorId = iota // root is required to create a SyscallFS
 )
 
 type syscallWrapper struct {
 }
 
-func New() syscall.Syscall_FS {
-	return new(syscallWrapper)
+/*
+	Constructs a new SyscallFS instance and returns it providing the effective user id
+	is root. Otherwise return an error.
+*/
+func NewFS() (syscall.SyscallFS, error) {
+	euid := os.Geteuid()
+	if euid != 0 {
+		return nil, gerror.Newf(ErrNotRoot, "Effective user id %d is not root", euid)
+	}
+	return &syscallWrapper{}, nil
 }
 
 func (_ *syscallWrapper) BindMountReadWrite(source string, mountPoint string) error {

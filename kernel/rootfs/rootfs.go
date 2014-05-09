@@ -85,7 +85,7 @@ const (
 const tempDirMode os.FileMode = 0777
 
 type rootfs struct {
-	sc        syscall.Syscall_FS
+	sc        syscall.SyscallFS
 	f         fileutils.Fileutils
 	rwBaseDir string
 }
@@ -94,7 +94,7 @@ type rootfs struct {
 	Creates a new RootFS instance which uses the given Syscall interface and the given read-write
 	directory as a base for the writable portion of generated root filesystems.
 */
-func NewRootFS(sc syscall.Syscall_FS, f fileutils.Fileutils, rwBaseDir string) (RootFS, gerror.Gerror) {
+func NewRootFS(sc syscall.SyscallFS, f fileutils.Fileutils, rwBaseDir string) (RootFS, gerror.Gerror) {
 	fileMode, gerr := f.Filemode(rwBaseDir)
 	if gerr != nil {
 		return nil, gerror.NewFromError(ErrRwBaseDirMissing, gerr)
@@ -130,36 +130,36 @@ func (rfs *rootfs) Generate(prototype string) (root string, gerr gerror.Gerror) 
 	if gerr == nil {
 		var err error
 		rwPath, err = ioutil.TempDir(rfs.rwBaseDir, "tmp-rootfs-")
-		var undo = func() {
+		defer cleanup(gerror.NewFromError(ErrCreateTempDir, err), func() {
 			if e := os.RemoveAll(rwPath); e != nil {
 				glog.Warningf("Encountered %q while recovering from %q", e, gerr)
 			}
-		}
-		defer cleanup(gerror.NewFromError(ErrCreateTempDir, err), undo)
+		})
 	}
 
 	if gerr == nil {
 		var err error
 		root, err = ioutil.TempDir(rfs.rwBaseDir, "mnt-")
-		var undo = func() {
+		defer cleanup(gerror.NewFromError(ErrCreateMountDir, err), func() {
 			if e := os.RemoveAll(root); e != nil {
 				glog.Warningf("Encountered %q while recovering from %q", e, gerr)
 			}
-		}
-		defer cleanup(gerror.NewFromError(ErrCreateMountDir, err), undo)
+		})
 	}
 
 	if gerr == nil {
 		err := rfs.sc.BindMountReadOnly(prototype, root)
-		undo := func() {
+		if err != nil {
+			glog.Errorf("BindMoundReadOnly(%s, %s) failed with: %s", prototype, root, err)
+		}
+		defer cleanup(gerror.NewFromError(ErrBindMountRoot, err), func() {
 			if glog.V(1) {
 				glog.Infof("unmounting %q", root)
 			}
 			if e := rfs.sc.Unmount(root); e != nil {
 				glog.Warningf("Encountered %q while recovering from %q", e, gerr)
 			}
-		}
-		defer cleanup(gerror.NewFromError(ErrBindMountRoot, err), undo)
+		})
 	}
 
 	if gerr == nil {
@@ -199,6 +199,7 @@ func (rfs *rootfs) overlayDirectory(dir string, root string, rwPath string) gerr
 	}
 	dirPath := filepath.Join(rwPath, dir)
 	mntPath := filepath.Join(root, dir)
+	// Set up read-write directory, copying mount directory contents if there are any.
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		if _, err = os.Stat(mntPath); os.IsExist(err) {
 			err = rfs.f.Copy(dirPath, mntPath)
@@ -209,11 +210,16 @@ func (rfs *rootfs) overlayDirectory(dir string, root string, rwPath string) gerr
 			return gerror.NewFromError(ErrOverlayDir, err)
 		}
 	}
+	// Set up mount directory unless it already exists.
+	if _, err := os.Stat(mntPath); os.IsNotExist(err) {
+		err = os.MkdirAll(mntPath, tempDirMode)
+	}
 	if glog.V(2) {
 		glog.Infof("BindMountReadWrite(%q, %q)", dirPath, mntPath)
 	}
 	err := rfs.sc.BindMountReadWrite(dirPath, mntPath)
 	if err != nil {
+		glog.Errorf("BindMountReadWrite(%s, %s) failed with: %s", dirPath, mntPath, err)
 		return gerror.NewFromError(ErrBindMountSubdir, err)
 	}
 	return nil
