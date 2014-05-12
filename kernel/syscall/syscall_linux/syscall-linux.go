@@ -52,9 +52,13 @@ func (_ *syscallWrapper) BindMountReadWrite(source string, mountPoint string) er
 	return trueSyscall.Mount(source, mountPoint, "", trueSyscall.MS_BIND, "")
 }
 
-func (_ *syscallWrapper) BindMountReadOnly(source string, mountPoint string) error {
-
-	return trueSyscall.Mount(source, mountPoint, "", trueSyscall.MS_BIND|trueSyscall.MS_RDONLY, "")
+func (sc *syscallWrapper) BindMountReadOnly(source string, mountPoint string) error {
+	// On kernels earlier than 2.6.26, a read-only bind mount must be formed by remounting a read-write bind mount read-only.
+	err := sc.BindMountReadWrite(source, mountPoint)
+	if err != nil {
+		return err
+	}
+	return trueSyscall.Mount(source, mountPoint, "", trueSyscall.MS_BIND|trueSyscall.MS_REMOUNT|trueSyscall.MS_RDONLY, "")
 }
 
 func (_ *syscallWrapper) Unmount(mountPoint string) error {
