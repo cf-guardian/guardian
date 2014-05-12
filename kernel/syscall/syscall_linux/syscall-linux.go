@@ -22,8 +22,10 @@ package syscall_linux
 import (
 	"github.com/cf-guardian/guardian/gerror"
 	syscall "github.com/cf-guardian/guardian/kernel/syscall"
+	"github.com/golang/glog"
 	"os"
 	trueSyscall "syscall"
+	"io/ioutil"
 )
 
 // ImplErrorId is used for error ids relating to the implementation of this package.
@@ -53,12 +55,57 @@ func (_ *syscallWrapper) BindMountReadWrite(source string, mountPoint string) er
 }
 
 func (sc *syscallWrapper) BindMountReadOnly(source string, mountPoint string) error {
-	// On kernels earlier than 2.6.26, a read-only bind mount must be formed by remounting a read-write bind mount read-only.
-	err := sc.BindMountReadWrite(source, mountPoint)
+	// On Linux, a read-only bind mount may turn out read-write and must be remounted to make it read-only.
+	err := doBindMountReadOnly(source, mountPoint)
 	if err != nil {
 		return err
 	}
+	readOnly := checkReadOnly(mountPoint)
+	if !readOnly {
+		if glog.V(2) {
+			glog.Infof("Remounting bind mount %s read-only", mountPoint)
+		}
+		err = doBindRemountReadOnly(source, mountPoint)
+		if err != nil {
+			if unmountErr := sc.Unmount(mountPoint); unmountErr != nil {
+				glog.Warningf("Failed to undo bind mount of %s while recovering from %s", mountPoint, err)
+			}
+			return err
+		}
+		if !checkReadOnly(mountPoint) {
+			glog.Warningf("Failed to remount bind mount of %s read-only", mountPoint)
+			if unmountErr := sc.Unmount(mountPoint); unmountErr != nil {
+				glog.Warningf("Failed to undo bind mount of %s while recovering from failure to remount read-only", mountPoint)
+			}
+			return gerror.Newf("Failed to remount bind mount of %s read-only", mountPoint)
+		} else {
+			if glog.V(2) {
+				glog.Infof("Successfully remounted bind mount %s read-only", mountPoint)
+			}
+		}
+	}
+	return nil
+}
+
+func doBindMountReadOnly(source string, mountPoint string) error {
+	return trueSyscall.Mount(source, mountPoint, "", trueSyscall.MS_BIND|trueSyscall.MS_RDONLY, "")
+}
+
+func doBindRemountReadOnly(source string, mountPoint string) error {
 	return trueSyscall.Mount(source, mountPoint, "", trueSyscall.MS_BIND|trueSyscall.MS_REMOUNT|trueSyscall.MS_RDONLY, "")
+}
+
+func checkReadOnly(mountPoint string) bool {
+	path, err := ioutil.TempDir(mountPoint, "cf-guardian-ro-check-")
+	if err != nil {
+		return true
+	} else {
+		err = os.Remove(path)
+		if err != nil {
+			glog.Warningf("Failed to delete file %s used to check read-only bind mount", path)
+		}
+		return false
+	}
 }
 
 func (_ *syscallWrapper) Unmount(mountPoint string) error {
