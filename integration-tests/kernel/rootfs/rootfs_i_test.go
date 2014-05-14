@@ -71,7 +71,7 @@ func TestGenerateMissingRootSubdir(t *testing.T) {
 		t.Errorf("%s", gerr)
 		return
 	}
-	prototypeDir := createPrototype(tempDir)
+	prototypeDir := test_support.CreatePrototype(tempDir)
 	os.Remove(filepath.Join(prototypeDir, `home`))
 
 	_, gerr = rfs.Generate(prototypeDir)
@@ -90,7 +90,7 @@ func TestGenerate(t *testing.T) {
 		t.Errorf("%s", gerr)
 		return
 	}
-	prototypeDir := createPrototype(tempDir)
+	prototypeDir := test_support.CreatePrototype(tempDir)
 
 	root, gerr := rfs.Generate(prototypeDir)
 	if gerr != nil {
@@ -99,15 +99,6 @@ func TestGenerate(t *testing.T) {
 	}
 
 	checkRootFS(root, prototypeDir, t)
-}
-
-func createPrototype(baseDir string) string {
-	pdir := test_support.CreateDir(baseDir, "test-prototype")
-	dirs := []string{`proc`, `dev`, `etc`, `home`, `sbin`, `var`, `tmp`}
-	for _, dir := range dirs {
-		os.MkdirAll(filepath.Join(pdir, dir), os.FileMode(0))
-	}
-	return pdir
 }
 
 func checkRootFS(root string, prototypeDir string, t *testing.T) {

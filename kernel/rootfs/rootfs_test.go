@@ -85,13 +85,17 @@ func TestGenerate(t *testing.T) {
 		t.Errorf("%s", gerr)
 		return
 	}
-	prototypeDir := filepath.Join(tempDir, "test-prototype")
+	prototypeDir := test_support.CreatePrototype(tempDir)
 
 	mockSyscallFS.EXPECT().BindMountReadOnly(prototypeDir, test_support.NewStringPrefixMatcher(filepath.Join(tempDir, "mnt")))
 
 	dirs := []string{`proc`, `dev`, `etc`, `home`, `sbin`, `var`, `tmp`}
 	for _, dir := range dirs {
-		mockSyscallFS.EXPECT().BindMountReadWrite(test_support.NewStringRegexMatcher(filepath.Join(tempDir, "tmp-rootfs-.*", dir)), test_support.NewStringRegexMatcher(filepath.Join(tempDir, "mnt-.*", dir)))
+		srcMatcher := test_support.NewStringRegexMatcher(filepath.Join(tempDir, "tmp-rootfs-[^/]*", dir))
+		mntMatcher := test_support.NewStringRegexMatcher(filepath.Join(tempDir, "mnt-[^/]*", dir))
+		mockFileUtils.EXPECT().Exists(srcMatcher).Return(true).AnyTimes()
+		mockFileUtils.EXPECT().Exists(mntMatcher).Return(true).AnyTimes()
+		mockSyscallFS.EXPECT().BindMountReadWrite(srcMatcher, mntMatcher)
 	}
 
 	root, gerr := rfs.Generate(prototypeDir)
@@ -133,14 +137,21 @@ func testGenerateBackoutAfterBindMountReadWriteError(i int, t *testing.T) {
 	dirs := []string{`proc`, `dev`, `etc`, `home`, `sbin`, `var`, `tmp`}
 	for j := 0; j < i; j++ {
 		dir := dirs[j]
-		mountPointMatcher := test_support.NewStringRegexMatcher(filepath.Join(tempDir, `mnt-[\d]*`, dir))
-		mockSyscallFS.EXPECT().BindMountReadWrite(test_support.NewStringRegexMatcher(filepath.Join(tempDir, "tmp-rootfs-.*", dir)), mountPointMatcher)
-		mockSyscallFS.EXPECT().Unmount(mountPointMatcher)
+
+		srcMatcher := test_support.NewStringRegexMatcher(filepath.Join(tempDir, "tmp-rootfs-[^/]*", dir))
+		mntMatcher := test_support.NewStringRegexMatcher(filepath.Join(tempDir, "mnt-[^/]*", dir))
+		mockFileUtils.EXPECT().Exists(srcMatcher).Return(true).AnyTimes()
+		mockFileUtils.EXPECT().Exists(mntMatcher).Return(true).AnyTimes()
+		mockSyscallFS.EXPECT().BindMountReadWrite(srcMatcher, mntMatcher)
+		mockSyscallFS.EXPECT().Unmount(mntMatcher)
 	}
 
 	failingDir := dirs[i]
-	mockSyscallFS.EXPECT().BindMountReadWrite(test_support.NewStringRegexMatcher(filepath.Join(tempDir, "tmp-rootfs-.*", failingDir)),
-		test_support.NewStringRegexMatcher(filepath.Join(tempDir, "mnt-.*", failingDir))).Return(errors.New("test error"))
+	srcMatcher := test_support.NewStringRegexMatcher(filepath.Join(tempDir, "tmp-rootfs-[^/]*", failingDir))
+	mntMatcher := test_support.NewStringRegexMatcher(filepath.Join(tempDir, "mnt-[^/]*", failingDir))
+	mockFileUtils.EXPECT().Exists(srcMatcher).Return(true).AnyTimes()
+	mockFileUtils.EXPECT().Exists(mntMatcher).Return(true).AnyTimes()
+	mockSyscallFS.EXPECT().BindMountReadWrite(srcMatcher, mntMatcher).Return(errors.New("test error"))
 
 	root, gerr := rfs.Generate(prototypeDir)
 	if gerr == nil {

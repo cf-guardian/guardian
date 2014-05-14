@@ -61,6 +61,12 @@ type Fileutils interface {
 	Copy(destPath string, srcPath string) gerror.Gerror
 
 	/*
+		Tests the existence of a file or directory at a given path. Returns true if and only if the file or
+		directory exists.
+	 */
+	Exists(path string) bool
+
+	/*
 		Filemode returns the os.FileMode of the file with the given path. If the file does not exist, returns
 		an error with tag ErrFileNotFound.
 	*/
@@ -226,6 +232,13 @@ func (f *futils) copySymlink(destLinkPath string, srcLinkPath string, topSrcPath
 		glog.Infof("symbolically linked %s to %s", destLinkPath, relativePath)
 	}
 	return nil
+}
+
+func (f * futils) Exists(path string) bool {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return false
+	}
+	return true
 }
 
 func (f *futils) Filemode(path string) (os.FileMode, gerror.Gerror) {

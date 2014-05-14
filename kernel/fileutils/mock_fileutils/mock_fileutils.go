@@ -4,9 +4,9 @@
 package mock_fileutils
 
 import (
-	gomock "code.google.com/p/gomock/gomock"
 	gerror "github.com/cf-guardian/guardian/gerror"
 	os "os"
+	gomock "code.google.com/p/gomock/gomock"
 )
 
 // Mock of Fileutils interface
@@ -38,6 +38,16 @@ func (_m *MockFileutils) Copy(destPath string, srcPath string) gerror.Gerror {
 
 func (_mr *_MockFileutilsRecorder) Copy(arg0, arg1 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Copy", arg0, arg1)
+}
+
+func (_m *MockFileutils) Exists(path string) bool {
+	ret := _m.ctrl.Call(_m, "Exists", path)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+func (_mr *_MockFileutilsRecorder) Exists(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Exists", arg0)
 }
 
 func (_m *MockFileutils) Filemode(path string) (os.FileMode, gerror.Gerror) {

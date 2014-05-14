@@ -414,6 +414,34 @@ func TestCopyFileSameSymlink(t *testing.T) {
 	}
 }
 
+func TestExistsDir(t *testing.T) {
+	f := createFileutils()
+	td := test_support.CreateTempDir()
+	exists := f.Exists(td)
+	if !exists {
+		t.Errorf("Exists failed to find existing directory %s", td)
+	}
+}
+
+func TestExistsFile(t *testing.T) {
+	f := createFileutils()
+	td := test_support.CreateTempDir()
+	src := test_support.CreateFile(td, "src.file")
+	exists := f.Exists(src)
+	if !exists {
+		t.Errorf("Exists failed to find existing file %s", src)
+	}
+}
+
+func TestExistsFalse(t *testing.T) {
+	f := createFileutils()
+	path := "/nosuch"
+	exists := f.Exists(path)
+	if exists {
+		t.Errorf("Exists claimed non-existent path %s exists", path)
+	}
+}
+
 func createFileutils() fileutils.Fileutils {
 	return fileutils.New()
 }

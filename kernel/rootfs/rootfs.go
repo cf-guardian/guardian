@@ -112,6 +112,9 @@ func NewRootFS(sc syscall.SyscallFS, f fileutils.Fileutils, rwBaseDir string) (R
 }
 
 func (rfs *rootfs) Generate(prototype string) (root string, gerr gerror.Gerror) {
+	if glog.V(1) {
+		glog.Infof("Generate(%s)", prototype)
+	}
 	defer func() {
 		if gerr != nil {
 			root = ""
@@ -200,7 +203,7 @@ func (rfs *rootfs) overlayDirectory(dir string, root string, rwPath string) gerr
 	}
 	mntPath := filepath.Join(root, dir)
 	// check mntPath exists
-	if _, err := os.Stat(mntPath); os.IsNotExist(err) {
+	if !rfs.f.Exists(mntPath) {
 		glog.Errorf("Directory %s not present in root file system (%s)", dir, root)
 		return gerror.Newf(ErrRootSubdirMissing, "Directory %s not present in root file system (%s)", dir, root)
 	}
@@ -208,8 +211,9 @@ func (rfs *rootfs) overlayDirectory(dir string, root string, rwPath string) gerr
 	dirPath := filepath.Join(rwPath, dir)
 
 	// Set up read-write directory, copying mount directory contents if there are any.
-	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
-		if _, err = os.Stat(mntPath); os.IsExist(err) {
+	if !rfs.f.Exists(dirPath) {
+		var err error
+		if rfs.f.Exists(mntPath) {
 			err = rfs.f.Copy(dirPath, mntPath)
 		} else {
 			err = os.MkdirAll(dirPath, tempDirMode)
@@ -219,8 +223,8 @@ func (rfs *rootfs) overlayDirectory(dir string, root string, rwPath string) gerr
 		}
 	}
 	// Set up mount directory unless it already exists.
-	if _, err := os.Stat(mntPath); os.IsNotExist(err) {
-		err = os.MkdirAll(mntPath, tempDirMode)
+	if !rfs.f.Exists(mntPath) {
+		os.MkdirAll(mntPath, tempDirMode) //TODO: process the error
 	}
 	if glog.V(2) {
 		glog.Infof("BindMountReadWrite(%q, %q)", dirPath, mntPath)
