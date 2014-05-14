@@ -1,0 +1,6 @@
+#!/bin/bash
+
+source $HOME/.go-setup
+
+echo "";echo "go $*";echo ""
+go $*
