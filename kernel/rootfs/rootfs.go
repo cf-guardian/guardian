@@ -222,10 +222,7 @@ func (rfs *rootfs) overlayDirectory(dir string, root string, rwPath string) gerr
 			return gerror.NewFromError(ErrOverlayDir, err)
 		}
 	}
-	// Set up mount directory unless it already exists.
-	if !rfs.f.Exists(mntPath) {
-		os.MkdirAll(mntPath, tempDirMode) //TODO: process the error
-	}
+	
 	if glog.V(2) {
 		glog.Infof("BindMountReadWrite(%q, %q)", dirPath, mntPath)
 	}
