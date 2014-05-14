@@ -37,6 +37,7 @@ const (
 	ErrCreateMountDir
 	ErrBindMountRoot
 	ErrBindMountSubdir
+	ErrRootSubdirMissing
 	ErrUnmountSubdir
 	ErrOverlayTempDir
 	ErrOverlayDir
@@ -197,8 +198,15 @@ func (rfs *rootfs) overlayDirectory(dir string, root string, rwPath string) gerr
 	if glog.V(2) {
 		glog.Infof("overlayDirectory(%q, %q, %q)", dir, root, rwPath)
 	}
-	dirPath := filepath.Join(rwPath, dir)
 	mntPath := filepath.Join(root, dir)
+	// check mntPath exists
+	if _, err := os.Stat(mntPath); os.IsNotExist(err) {
+		glog.Errorf("Directory %s not present in root file system (%s)", dir, root)
+		return gerror.Newf(ErrRootSubdirMissing, "Directory %s not present in root file system (%s)", dir, root)
+	}
+
+	dirPath := filepath.Join(rwPath, dir)
+
 	// Set up read-write directory, copying mount directory contents if there are any.
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		if _, err = os.Stat(mntPath); os.IsExist(err) {

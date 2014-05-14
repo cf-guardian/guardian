@@ -62,6 +62,25 @@ func TestReadOnlyReadWriteBaseDir(t *testing.T) {
 	}
 }
 
+func TestGenerateMissingRootSubdir(t *testing.T) {
+	syscallFS, futils := setup(t)
+
+	tempDir := test_support.CreateTempDir()
+	rfs, gerr := rootfs.NewRootFS(syscallFS, futils, tempDir)
+	if gerr != nil {
+		t.Errorf("%s", gerr)
+		return
+	}
+	prototypeDir := createPrototype(tempDir)
+	os.Remove(filepath.Join(prototypeDir, `home`))
+
+	_, gerr = rfs.Generate(prototypeDir)
+	if gerr == nil || !gerr.EqualTag(rootfs.ErrRootSubdirMissing){
+		t.Errorf("Incorrect error %s", gerr)
+		return
+	}
+}
+
 func TestGenerate(t *testing.T) {
 	syscallFS, futils := setup(t)
 
@@ -71,7 +90,7 @@ func TestGenerate(t *testing.T) {
 		t.Errorf("%s", gerr)
 		return
 	}
-	prototypeDir := test_support.CreateDir(tempDir, "test-prototype")
+	prototypeDir := createPrototype(tempDir)
 
 	root, gerr := rfs.Generate(prototypeDir)
 	if gerr != nil {
@@ -80,6 +99,15 @@ func TestGenerate(t *testing.T) {
 	}
 
 	checkRootFS(root, prototypeDir, t)
+}
+
+func createPrototype(baseDir string) string {
+	pdir := test_support.CreateDir(baseDir, "test-prototype")
+	dirs := []string{`proc`, `dev`, `etc`, `home`, `sbin`, `var`, `tmp`}
+	for _, dir := range dirs {
+		os.MkdirAll(filepath.Join(pdir, dir), os.FileMode(0))
+	}
+	return pdir
 }
 
 func checkRootFS(root string, prototypeDir string, t *testing.T) {
