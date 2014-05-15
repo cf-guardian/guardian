@@ -50,9 +50,9 @@ type Gerror interface {
 func New(tag Tag, message string) Gerror {
 	var stack [stackSize]byte
 
-	runtime.Stack(stack[:], false)
+	n := runtime.Stack(stack[:], false)
 
-	return &err{tag, reflect.TypeOf(tag), message, stack[:]}
+	return &err{tag, reflect.TypeOf(tag), message, stack[:n]}
 }
 
 // Returns an error containing the given tag and format string and the current stack trace. The given inserts are applied to the format string to produce an error message.
@@ -81,7 +81,7 @@ type err struct {
 }
 
 func (e *err) Error() string {
-	return fmt.Sprintf("%v %v", e.tag, e.typ) + ": " + e.message + "\n" + string(e.stackTrace[:])
+	return fmt.Sprintf("%v %v", e.tag, e.typ) + ": " + e.message + "\n" + string(e.stackTrace)
 }
 
 func (e *err) Tag() Tag {
