@@ -65,7 +65,7 @@ func TestCopySameFile(t *testing.T) {
 	f := createFileutils()
 
 	td := test_support.CreateTempDir()
-	defer os.RemoveAll(td)
+	defer cleanup(t, td)
 
 	src := test_support.CreateFile(td, "src.file")
 	err := f.Copy(src, src)
@@ -80,7 +80,7 @@ func TestCopyFileMode(t *testing.T) {
 	f := createFileutils()
 
 	td := test_support.CreateTempDir()
-	defer os.RemoveAll(td)
+	defer cleanup(t, td)
 
 	src := test_support.CreateFileWithMode(td, "src.file", os.FileMode(0642))
 	target := filepath.Join(td, "target.file")
@@ -118,13 +118,15 @@ func TestCopyDirectoryToNew(t *testing.T) {
 	checkDirectory(targetDir, t)
 	checkFile(filepath.Join(targetDir, "file1"), "test contents", t)
 	checkFile(filepath.Join(targetDir, "file2"), "test contents", t)
+
+	cleanup(t, td)
 }
 
 func TestCopyDirectoryNestedToNew(t *testing.T) {
 	f := createFileutils()
 
 	td := test_support.CreateTempDir()
-	defer os.RemoveAll(td)
+	defer cleanup(t, td)
 
 	srcDir := filepath.Join(td, "source")
 	err := os.Mkdir(srcDir, os.FileMode(0777))
@@ -152,7 +154,7 @@ func TestCopyDirectoryToExisting(t *testing.T) {
 	f := createFileutils()
 
 	td := test_support.CreateTempDir()
-	defer os.RemoveAll(td)
+	defer cleanup(t, td)
 
 	srcDir := filepath.Join(td, "source")
 	err := os.Mkdir(srcDir, os.FileMode(0777))
@@ -180,7 +182,7 @@ func TestCopyDirMode(t *testing.T) {
 	f := createFileutils()
 
 	td := test_support.CreateTempDir()
-	defer os.RemoveAll(td)
+	defer cleanup(t, td)
 
 	src := test_support.CreateDirWithMode(td, "src.dir", os.FileMode(0642))
 	target := filepath.Join(td, "target.dir")
@@ -200,7 +202,7 @@ func TestCopyDirInternalSymlink(t *testing.T) {
 	f := createFileutils()
 
 	td := test_support.CreateTempDir()
-	defer os.RemoveAll(td)
+	defer cleanup(t, td)
 
 	/*
 	   Create a directory structure inside td like this:
@@ -249,7 +251,7 @@ func TestCopyDirInternalFileSymlink(t *testing.T) {
 	f := createFileutils()
 
 	td := test_support.CreateTempDir()
-	defer os.RemoveAll(td)
+	defer cleanup(t, td)
 
 	/*
 	   Create a directory structure inside td like this:
@@ -295,7 +297,7 @@ func TestCopyDirExternalSymlink(t *testing.T) {
 	f := createFileutils()
 
 	td := test_support.CreateTempDir()
-	defer os.RemoveAll(td)
+	defer cleanup(t, td)
 
 	/*
 	   Create a directory structure inside td like this:
@@ -323,7 +325,7 @@ func TestCopyDirInternalRelativeSymlink(t *testing.T) {
 	f := createFileutils()
 
 	td := test_support.CreateTempDir()
-	defer os.RemoveAll(td)
+	defer cleanup(t, td)
 
 	/*
 	   Create a directory structure inside td like this:
@@ -352,7 +354,7 @@ func TestCopyDirExternalRelativeSymlink(t *testing.T) {
 	f := createFileutils()
 
 	td := test_support.CreateTempDir()
-	defer os.RemoveAll(td)
+	defer cleanup(t, td)
 
 	/*
 	   Create a directory structure inside td like this:
@@ -383,7 +385,7 @@ func TestCopyFileSymlink(t *testing.T) {
 	f := createFileutils()
 
 	td := test_support.CreateTempDir()
-	defer os.RemoveAll(td)
+	defer cleanup(t, td)
 
 	src := test_support.CreateFile(td, "src.file")
 	link := filepath.Join(td, "link")
@@ -401,7 +403,7 @@ func TestCopyFileSameSymlink(t *testing.T) {
 	f := createFileutils()
 
 	td := test_support.CreateTempDir()
-	defer os.RemoveAll(td)
+	defer cleanup(t, td)
 
 	src := test_support.CreateFile(td, "src.file")
 	link := filepath.Join(td, "link")
@@ -417,6 +419,8 @@ func TestCopyFileSameSymlink(t *testing.T) {
 func TestExistsDir(t *testing.T) {
 	f := createFileutils()
 	td := test_support.CreateTempDir()
+	defer cleanup(t, td)
+
 	exists := f.Exists(td)
 	if !exists {
 		t.Errorf("Exists failed to find existing directory %s", td)
@@ -426,6 +430,8 @@ func TestExistsDir(t *testing.T) {
 func TestExistsFile(t *testing.T) {
 	f := createFileutils()
 	td := test_support.CreateTempDir()
+	defer cleanup(t, td)
+
 	src := test_support.CreateFile(td, "src.file")
 	exists := f.Exists(src)
 	if !exists {
@@ -467,4 +473,12 @@ func checkFile(target string, expContents string, t *testing.T) {
 	if actualContents := string(buf[:n]); actualContents != expContents {
 		t.Errorf("Contents %q not expected value %q", actualContents, expContents)
 	}
+}
+
+func cleanup(t *testing.T, paths... string) {
+//	for _, path := range paths {
+//		if err := os.RemoveAll(path); err != nil {
+//			t.Errorf("Could not delete %s", path)
+//		}
+//	}
 }
