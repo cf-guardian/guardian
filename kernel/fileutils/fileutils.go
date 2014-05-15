@@ -82,7 +82,7 @@ func New() Fileutils {
 
 func (f *futils) Copy(destPath string, srcPath string) gerror.Gerror {
 	if glog.V(1) {
-		glog.Infof("Copy(%s, %s)", destPath, srcPath)
+		glog.Infof("Copy(%q, %q)", destPath, srcPath)
 	}
 	return f.doCopy(destPath, srcPath, srcPath)
 }
@@ -107,7 +107,7 @@ func (f *futils) doCopy(destPath string, srcPath string, topSrcPath string) gerr
 
 func (f *futils) copyDir(destination string, source string, topSource string) gerror.Gerror {
 	if glog.V(2) {
-		glog.Infof("copyDir(%s, %s)", destination, source)
+		glog.Infof("copyDir(%q, %q)", destination, source)
 	}
 	finalDestination, gerr := f.finalDestinationDir(destination, source)
 	if gerr != nil {
@@ -121,7 +121,7 @@ func (f *futils) copyDir(destination string, source string, topSource string) ge
 
 	for _, name := range names {
 		if glog.V(2) {
-			glog.Infof("copying %s from %s to %s", name, source, finalDestination)
+			glog.Infof("copying %q from %q to %q", name, source, finalDestination)
 		}
 		gerr = f.doCopy(filepath.Join(finalDestination, name), filepath.Join(source, name), topSource)
 		if gerr != nil {
@@ -156,9 +156,9 @@ func getNames(dirPath string) (names [] string, gerr gerror.Gerror) {
 */
 func (f *futils) finalDestinationDir(destination string, source string) (finalDestination string, gerr gerror.Gerror) {
 	if glog.V(2) {
-		glog.Infof("openFinalDestinationDir(%s, %s)", destination, source)
+		glog.Infof("openFinalDestinationDir(%q, %q)", destination, source)
 		defer func() {
-			glog.Infof("openFinalDestinationDir(%s, %s) returning (%v, %v)", destination, source, finalDestination, gerr)
+			glog.Infof("openFinalDestinationDir(%q, %q) returning (%v, %v)", destination, source, finalDestination, gerr)
 		}()
 	}
 	sourceMode, gerr := f.Filemode(source)
@@ -182,7 +182,7 @@ func (f *futils) finalDestinationDir(destination string, source string) (finalDe
 
 func (f *futils) copyFile(destination string, source string) gerror.Gerror {
 	if glog.V(2) {
-		glog.Infof("copyFile(%s, %s)", destination, source)
+		glog.Infof("copyFile(%q, %q)", destination, source)
 	}
 	sourceFile, err := os.OpenFile(source, os.O_RDONLY, 0666)
 	if err != nil {
@@ -207,7 +207,7 @@ func (f *futils) copyFile(destination string, source string) gerror.Gerror {
 
 func (f *futils) copySymlink(destLinkPath string, srcLinkPath string, topSrcPath string) gerror.Gerror {
 	if glog.V(2) {
-		glog.Infof("copySymLink(%s, %s, %s)", destLinkPath, srcLinkPath, topSrcPath)
+		glog.Infof("copySymLink(%q, %q, %q)", destLinkPath, srcLinkPath, topSrcPath)
 	}
 	linkTarget, err := os.Readlink(srcLinkPath)
 	if err != nil {
@@ -226,7 +226,7 @@ func (f *futils) copySymlink(destLinkPath string, srcLinkPath string, topSrcPath
 	}
 	if strings.HasPrefix(topRelativePath, "..") {
 		return gerror.Newf(ErrExternalSymlink,
-			"cannot copy symbolic link %s with target %s which points outside the file or directory being copied %s",
+			"cannot copy symbolic link %q with target %q which points outside the file or directory being copied %q",
 			srcLinkPath, linkTarget, topSrcPath)
 	}
 
@@ -236,7 +236,7 @@ func (f *futils) copySymlink(destLinkPath string, srcLinkPath string, topSrcPath
 		return gerror.NewFromError(ErrUnexpected, err)
 	}
 	if glog.V(2) {
-		glog.Infof("symbolic link %s has target %s which has path %s relative to %s (directory containing link)",
+		glog.Infof("symbolic link %q has target %q which has path %q relative to %q (directory containing link)",
 			srcLinkPath, linkTarget, relativePath, linkParent)
 	}
 	err = os.Symlink(relativePath, destLinkPath)
@@ -244,7 +244,7 @@ func (f *futils) copySymlink(destLinkPath string, srcLinkPath string, topSrcPath
 		return gerror.NewFromError(ErrWritingTargetSymlink, err)
 	}
 	if glog.V(2) {
-		glog.Infof("symbolically linked %s to %s", destLinkPath, relativePath)
+		glog.Infof("symbolically linked %q to %q", destLinkPath, relativePath)
 	}
 	return nil
 }

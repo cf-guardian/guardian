@@ -63,24 +63,24 @@ func (sc *syscallWrapper) BindMountReadOnly(source string, mountPoint string) er
 	readOnly := checkReadOnly(mountPoint)
 	if !readOnly {
 		if glog.V(2) {
-			glog.Infof("Remounting bind mount %s read-only", mountPoint)
+			glog.Infof("Remounting bind mount %q read-only", mountPoint)
 		}
 		err = doBindRemountReadOnly(source, mountPoint)
 		if err != nil {
 			if unmountErr := sc.Unmount(mountPoint); unmountErr != nil {
-				glog.Warningf("Failed to undo bind mount of %s while recovering from %s", mountPoint, err)
+				glog.Warningf("Failed to undo bind mount of %q while recovering from %s", mountPoint, err)
 			}
 			return err
 		}
 		if !checkReadOnly(mountPoint) {
-			glog.Warningf("Failed to remount bind mount of %s read-only", mountPoint)
+			glog.Warningf("Failed to remount bind mount of %q read-only", mountPoint)
 			if unmountErr := sc.Unmount(mountPoint); unmountErr != nil {
-				glog.Warningf("Failed to undo bind mount of %s while recovering from failure to remount read-only", mountPoint)
+				glog.Warningf("Failed to undo bind mount of %q while recovering from failure to remount read-only", mountPoint)
 			}
-			return gerror.Newf("Failed to remount bind mount of %s read-only", mountPoint)
+			return gerror.Newf("Failed to remount bind mount of %q read-only", mountPoint)
 		} else {
 			if glog.V(2) {
-				glog.Infof("Successfully remounted bind mount %s read-only", mountPoint)
+				glog.Infof("Successfully remounted bind mount %q read-only", mountPoint)
 			}
 		}
 	}
@@ -102,7 +102,7 @@ func checkReadOnly(mountPoint string) bool {
 	} else {
 		err = os.Remove(path)
 		if err != nil {
-			glog.Warningf("Failed to delete file %s used to check read-only bind mount", path)
+			glog.Warningf("Failed to delete file %q used to check read-only bind mount", path)
 		}
 		return false
 	}

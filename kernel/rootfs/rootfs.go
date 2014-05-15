@@ -112,11 +112,11 @@ func NewRootFS(sc syscall.SyscallFS, f fileutils.Fileutils, rwBaseDir string) (R
 		return nil, gerror.NewFromError(ErrRwBaseDirMissing, gerr)
 	}
 	if !fileMode.IsDir() {
-		return nil, gerror.Newf(ErrRwBaseDirIsFile, "File found in place of read-write base directory: %s", rwBaseDir)
+		return nil, gerror.Newf(ErrRwBaseDirIsFile, "File found in place of read-write base directory: %q", rwBaseDir)
 	}
 	if fileMode.Perm()&0600 != 0600 {
 		return nil, gerror.Newf(ErrRwBaseDirNotRw,
-			"Read-write base directory does not have read and write permissions: %s has permissions %s",
+			"Read-write base directory does not have read and write permissions: %q has permissions %q",
 			rwBaseDir, fileMode.String())
 	}
 	return &rootfs{sc, f, rwBaseDir}, nil
@@ -124,7 +124,7 @@ func NewRootFS(sc syscall.SyscallFS, f fileutils.Fileutils, rwBaseDir string) (R
 
 func (rfs *rootfs) Generate(prototype string) (root string, gerr gerror.Gerror) {
 	if glog.V(1) {
-		glog.Infof("Generate(%s)", prototype)
+		glog.Infof("Generate(%q)", prototype)
 	}
 	defer func() {
 		if gerr != nil {
@@ -165,7 +165,7 @@ func (rfs *rootfs) Generate(prototype string) (root string, gerr gerror.Gerror) 
 	if gerr == nil {
 		err := rfs.sc.BindMountReadOnly(prototype, root)
 		if err != nil {
-			glog.Errorf("BindMountReadOnly(%s, %s) failed with: %s", prototype, root, err)
+			glog.Errorf("BindMountReadOnly(%q, %q) failed with: %s", prototype, root, err)
 		}
 		defer cleanup(gerror.NewFromError(ErrBindMountRoot, err), func() {
 				if glog.V(1) {
@@ -217,7 +217,7 @@ func (rfs *rootfs) removeOverlay(root string) gerror.Gerror {
 		// Reverse the range order.
 		dir := dirs[len(dirs) - i - 1]
 		if gerr := rfs.unmountOverlayDirectory(dir, root); gerr != nil {
-			glog.Errorf("Encountered %s while removing overlay from %s", gerr, root)
+			glog.Errorf("Encountered %s while removing overlay from %q", gerr, root)
 			if firstGerr == nil {
 				firstGerr = gerr
 			}
@@ -233,8 +233,8 @@ func (rfs *rootfs) overlayDirectory(dir string, root string, rwPath string) gerr
 	mntPath := filepath.Join(root, dir)
 	// check mntPath exists
 	if !rfs.f.Exists(mntPath) {
-		glog.Errorf("Directory %s not present in root file system (%s)", dir, root)
-		return gerror.Newf(ErrRootSubdirMissing, "Directory %s not present in root file system (%s)", dir, root)
+		glog.Errorf("Directory %q not present in root file system (%q)", dir, root)
+		return gerror.Newf(ErrRootSubdirMissing, "Directory %q not present in root file system (%q)", dir, root)
 	}
 
 	dirPath := filepath.Join(rwPath, dir)
@@ -251,7 +251,7 @@ func (rfs *rootfs) overlayDirectory(dir string, root string, rwPath string) gerr
 	}
 	err := rfs.sc.BindMountReadWrite(dirPath, mntPath)
 	if err != nil {
-		glog.Errorf("BindMountReadWrite(%s, %s) failed with: %s", dirPath, mntPath, err)
+		glog.Errorf("BindMountReadWrite(%q, %q) failed with: %s", dirPath, mntPath, err)
 		return gerror.NewFromError(ErrBindMountSubdir, err)
 	}
 	return nil
@@ -271,17 +271,17 @@ func (rfs *rootfs) unmountOverlayDirectory(dir string, root string) gerror.Gerro
 
 func (rfs *rootfs) Remove(root string) gerror.Gerror {
 	if glog.V(1) {
-		glog.Infof("Remove(%s)", root)
+		glog.Infof("Remove(%q)", root)
 	}
 	if gerr := rfs.removeOverlay(root); gerr != nil {
 		return gerr
 	}
 	if err := rfs.sc.Unmount(root); err != nil {
-		glog.Errorf("Unmounting %s failed: %s", root, err)
+		glog.Errorf("Unmounting %q failed: %s", root, err)
 		return gerror.NewFromError(ErrUnmountRoot, err)
 	}
 	if err := os.RemoveAll(root); err != nil {
-		glog.Errorf("Failed to remove %s: %s", root, err)
+		glog.Errorf("Failed to remove %q: %s", root, err)
 		return gerror.NewFromError(ErrRemoveMountDir, err)
 	}
 	return nil
