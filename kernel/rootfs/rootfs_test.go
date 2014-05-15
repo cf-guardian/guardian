@@ -31,6 +31,17 @@ import (
 	"testing"
 )
 
+func TestNilSyscallFS(t *testing.T) {
+	mockCtrl, mockFileUtils, _ := setupMocks(t)
+	defer mockCtrl.Finish()
+
+	rfs, gerr := rootfs.NewRootFS(nil, mockFileUtils, "")
+	if rfs != nil || !gerr.EqualTag(rootfs.ErrNilSyscallFS) {
+		t.Errorf("Incorrect return values (%s, %s)", rfs, gerr)
+		return
+	}
+}
+
 func TestNonExistentReadWriteBaseDir(t *testing.T) {
 	mockCtrl, mockFileUtils, mockSyscallFS := setupMocks(t)
 	defer mockCtrl.Finish()

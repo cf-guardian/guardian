@@ -42,7 +42,7 @@ const (
 	ErrOverlayTempDir
 	ErrOverlayDir
 	ErrRemoveMountDir
- 	ErrUnmountRoot
+	ErrUnmountRoot
 )
 
 type RootFS interface {
@@ -60,8 +60,6 @@ type RootFS interface {
 		create the result. Otherwise, the result is a mounted filesystem
 		consisting of a patchwork quilt of read-write temporary directories
 		and the prototype. TODO: decide which of these to support.
-
-		TODO: must this function be called under root?
 
 		If Generate fails, it has no side-effects other than possibly
 		creating some directories in the read-write base directory.
@@ -86,9 +84,10 @@ type RootFS interface {
 type ImplErrorId int
 
 const (
-	ErrRwBaseDirMissing ImplErrorId = iota // the read-write base directory was not found
-	ErrRwBaseDirIsFile                     // a file was found instead of the read-write base directory
-	ErrRwBaseDirNotRw                      // the read-write base directory does not have read and write permissions
+	ErrNilSyscallFS ImplErrorId = iota // the SyscallFS value was nil
+	ErrRwBaseDirMissing                // the read-write base directory was not found
+	ErrRwBaseDirIsFile                 // a file was found instead of the read-write base directory
+	ErrRwBaseDirNotRw                  // the read-write base directory does not have read and write permissions
 )
 
 const tempDirMode os.FileMode = 0777
@@ -100,10 +99,14 @@ type rootfs struct {
 }
 
 /*
-	Creates a new RootFS instance which uses the given Syscall interface and the given read-write
-	directory as a base for the writable portion of generated root filesystems.
+	Creates a new RootFS instance which uses the given SyscallFS interface and the given read-write
+	directory as a base for the writable portion of generated root filesystems. The SyscallFS interface value
+	must not be nil to ensure that the caller has sufficient privileges to perform mounts, etc.
 */
 func NewRootFS(sc syscall.SyscallFS, f fileutils.Fileutils, rwBaseDir string) (RootFS, gerror.Gerror) {
+	if sc == nil {
+		return nil, gerror.New(ErrNilSyscallFS, "nil SyscallFS")
+	}
 	fileMode, gerr := f.Filemode(rwBaseDir)
 	if gerr != nil {
 		return nil, gerror.NewFromError(ErrRwBaseDirMissing, gerr)
