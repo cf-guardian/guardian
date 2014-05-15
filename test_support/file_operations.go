@@ -43,7 +43,7 @@ func CreateFileWithMode(path string, fileName string, mode os.FileMode) string {
 }
 
 func CreateDir(path string, dirName string) string {
-	return CreateDirWithMode(path, dirName, os.FileMode(0777))
+	return CreateDirWithMode(path, dirName, os.FileMode(0755))
 }
 
 func CreateDirWithMode(path string, dirName string, mode os.FileMode) string {
@@ -57,7 +57,7 @@ func CreatePrototype(baseDir string) string {
 	pdir := CreateDir(baseDir, "test-prototype")
 	dirs := []string{`proc`, `dev`, `etc`, `home`, `sbin`, `var`, `tmp`}
 	for _, dir := range dirs {
-		os.MkdirAll(filepath.Join(pdir, dir), os.FileMode(0))
+		os.MkdirAll(filepath.Join(pdir, dir), os.FileMode(0755))
 	}
 	return pdir
 }

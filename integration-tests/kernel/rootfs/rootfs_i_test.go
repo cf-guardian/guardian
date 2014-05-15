@@ -99,6 +99,18 @@ func TestGenerate(t *testing.T) {
 	}
 
 	checkRootFS(root, prototypeDir, t)
+
+	gerr = rfs.Remove(root)
+	if gerr != nil {
+		t.Errorf("%s", gerr)
+		return
+	}
+
+	err := os.RemoveAll(tempDir)
+	if err != nil {
+		t.Errorf("Error removing test directory %s", err)
+		return
+	}
 }
 
 func checkRootFS(root string, prototypeDir string, t *testing.T) {
