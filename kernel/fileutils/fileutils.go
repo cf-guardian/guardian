@@ -113,14 +113,10 @@ func (f *futils) copyDir(destination string, source string, topSource string) ge
 	if gerr != nil {
 		return gerr
 	}
-	src, err := os.Open(source)
-	if err != nil {
-		return gerror.NewFromError(ErrOpeningSourceDir, err)
-	}
 
-	names, err := src.Readdirnames(-1)
-	if err != nil {
-		return gerror.NewFromError(ErrCannotListSourceDir, err)
+	names, gerr := getNames(source)
+	if gerr != nil {
+		return gerr
 	}
 
 	for _, name := range names {
@@ -134,6 +130,25 @@ func (f *futils) copyDir(destination string, source string, topSource string) ge
 	}
 
 	return nil
+}
+
+func getNames(dirPath string) (names [] string, gerr gerror.Gerror) {
+	src, err := os.Open(dirPath)
+	if err != nil {
+		return names, gerror.NewFromError(ErrOpeningSourceDir, err)
+	}
+	defer func() {
+		if err := src.Close(); err != nil {
+			glog.Warningf("Cannot close %v", src)
+		}
+	}()
+
+	names, err = src.Readdirnames(-1)
+	if err != nil {
+		return names, gerror.NewFromError(ErrCannotListSourceDir, err)
+	}
+
+	return names, nil
 }
 
 /*
