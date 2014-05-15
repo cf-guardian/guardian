@@ -467,6 +467,7 @@ func checkDirectory(path string, t *testing.T) {
 func checkFile(target string, expContents string, t *testing.T) {
 	f, err := os.Open(target)
 	check(err)
+	defer f.Close()
 	buf := make([]byte, len(expContents))
 	n, err := f.Read(buf)
 	check(err)
@@ -476,9 +477,9 @@ func checkFile(target string, expContents string, t *testing.T) {
 }
 
 func cleanup(t *testing.T, paths... string) {
-//	for _, path := range paths {
-//		if err := os.RemoveAll(path); err != nil {
-//			t.Errorf("Could not delete %s", path)
-//		}
-//	}
+	for _, path := range paths {
+		if err := os.RemoveAll(path); err != nil {
+			t.Errorf("Could not delete %s", path)
+		}
+	}
 }

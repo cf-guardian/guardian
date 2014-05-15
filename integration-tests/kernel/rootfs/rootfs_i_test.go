@@ -114,7 +114,7 @@ func TestGenerate(t *testing.T) {
 }
 
 func checkRootFS(root string, prototypeDir string, t *testing.T) {
-	_, err := createFile(root, "test")
+	_, err := createFile(t, root, "test")
 	if err == nil {
 		t.Errorf("Created file in read-only section of root %s", root)
 	}
@@ -129,21 +129,22 @@ func setup(t *testing.T) (syscall.SyscallFS, fileutils.Fileutils) {
 	return sc, fileutils.New()
 }
 
-func createFile(td string, fileName string) (string, error) {
-	return createFileWithMode(td, fileName, os.FileMode(0666))
+func createFile(t *testing.T, td string, fileName string) (string, error) {
+	return createFileWithMode(t, td, fileName, os.FileMode(0666))
 }
 
-func createFileWithMode(td string, fileName string, mode os.FileMode) (string, error) {
+func createFileWithMode(t *testing.T, td string, fileName string, mode os.FileMode) (string, error) {
 	fp := filepath.Join(td, fileName)
 	f, err := os.OpenFile(fp, os.O_CREATE|os.O_EXCL|os.O_WRONLY, mode)
 	if err != nil {
 		return "", err
 	}
+	defer func(){
+		if err := f.Close(); err != nil {
+			t.Errorf("Failed to close file %v: %s", f, err)
+		}
+	}()
 	_, err = f.WriteString("test contents")
-	if err != nil {
-		return "", err
-	}
-	err = f.Close()
 	if err != nil {
 		return "", err
 	}

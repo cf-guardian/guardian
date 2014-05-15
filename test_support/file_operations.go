@@ -36,9 +36,9 @@ func CreateFileWithMode(path string, fileName string, mode os.FileMode) string {
 	fp := filepath.Join(path, fileName)
 	f, err := os.OpenFile(fp, os.O_CREATE|os.O_EXCL|os.O_WRONLY, mode)
 	check(err)
+	defer f.Close()
 	_, err = f.WriteString("test contents")
 	check(err)
-	check(f.Close())
 	return fp
 }
 
