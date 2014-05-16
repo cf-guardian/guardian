@@ -75,10 +75,13 @@ func CreateDirWithMode(path string, dirName string, mode os.FileMode) string {
 	return fp
 }
 
+func RootFSDirs() []string {
+	return []string{`proc`, `dev`, `etc`, `home`, `sbin`, `var`, `tmp`}
+}
+
 func CreatePrototype(baseDir string) string {
 	pdir := CreateDir(baseDir, "test-prototype")
-	dirs := []string{`proc`, `dev`, `etc`, `home`, `sbin`, `var`, `tmp`}
-	for _, dir := range dirs {
+	for _, dir := range RootFSDirs() {
 		os.MkdirAll(filepath.Join(pdir, dir), os.FileMode(0755))
 	}
 	return pdir

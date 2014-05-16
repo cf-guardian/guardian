@@ -98,6 +98,8 @@ type rootfs struct {
 	rwBaseDir string
 }
 
+var rootSubdirs []string = []string{`proc`, `dev`, `etc`, `home`, `sbin`, `var`, `tmp`}
+
 /*
 	Creates a new RootFS instance which uses the given SyscallFS interface and the given read-write
 	directory as a base for the writable portion of generated root filesystems. The SyscallFS interface value
@@ -188,7 +190,6 @@ func (rfs *rootfs) overlay(root string, rwPath string) gerror.Gerror {
 	if glog.V(2) {
 		glog.Infof("overlay(%q, %q)", root, rwPath)
 	}
-	dirs := []string{`proc`, `dev`, `etc`, `home`, `sbin`, `var`, `tmp`}
 
 	// Create a tmp directory so it will end up empty and with the correct permissions regardless of the tmp
 	// directory contents and permissions in the prototype root filesystem.
@@ -197,10 +198,10 @@ func (rfs *rootfs) overlay(root string, rwPath string) gerror.Gerror {
 		return gerror.NewFromError(ErrOverlayTempDir, err)
 	}
 
-	for i, dir := range dirs {
+	for i, dir := range rootSubdirs {
 		if gerr := rfs.overlayDirectory(dir, root, rwPath); gerr != nil {
 			for j := i - 1; j >= 0; j-- {
-				if cleanupGerr := rfs.unmountOverlayDirectory(dirs[j], root); cleanupGerr != nil {
+				if cleanupGerr := rfs.unmountOverlayDirectory(rootSubdirs[j], root); cleanupGerr != nil {
 					glog.Warningf("Encountered %q while recovering from %q", cleanupGerr, gerr)
 				}
 			}
@@ -212,10 +213,9 @@ func (rfs *rootfs) overlay(root string, rwPath string) gerror.Gerror {
 
 func (rfs *rootfs) removeOverlay(root string) gerror.Gerror {
 	var firstGerr gerror.Gerror
-	dirs := []string{`proc`, `dev`, `etc`, `home`, `sbin`, `var`, `tmp`}
-	for i, _ := range dirs {
+	for i, _ := range rootSubdirs {
 		// Reverse the range order.
-		dir := dirs[len(dirs) - i - 1]
+		dir := rootSubdirs[len(rootSubdirs) - i - 1]
 		if gerr := rfs.unmountOverlayDirectory(dir, root); gerr != nil {
 			glog.Errorf("Encountered %s while removing overlay from %q", gerr, root)
 			if firstGerr == nil {
