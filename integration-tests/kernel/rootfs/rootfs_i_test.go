@@ -40,6 +40,8 @@ func TestNonDirReadWriteBaseDir(t *testing.T) {
 	syscallFS, futils := setup(t)
 
 	tempDir := test_support.CreateTempDir()
+	defer test_support.CleanupDirs(t, tempDir)
+
 	filePath := test_support.CreateFile(tempDir, "testFile")
 
 	rfs, gerr := rootfs.NewRootFS(syscallFS, futils, filePath)
@@ -53,6 +55,8 @@ func TestReadOnlyReadWriteBaseDir(t *testing.T) {
 	syscallFS, futils := setup(t)
 
 	tempDir := test_support.CreateTempDir()
+	defer test_support.CleanupDirs(t, tempDir)
+
 	dirPath := test_support.CreateDirWithMode(tempDir, "test-rootfs", os.FileMode(0400))
 
 	rfs, gerr := rootfs.NewRootFS(syscallFS, futils, dirPath)
@@ -66,6 +70,8 @@ func TestGenerateMissingRootSubdir(t *testing.T) {
 	syscallFS, futils := setup(t)
 
 	tempDir := test_support.CreateTempDir()
+	defer test_support.CleanupDirs(t, tempDir)
+
 	rfs, gerr := rootfs.NewRootFS(syscallFS, futils, tempDir)
 	if gerr != nil {
 		t.Errorf("%s", gerr)
@@ -85,6 +91,8 @@ func TestGenerate(t *testing.T) {
 	syscallFS, futils := setup(t)
 
 	tempDir := test_support.CreateTempDir()
+	defer test_support.CleanupDirs(t, tempDir)
+
 	rfs, gerr := rootfs.NewRootFS(syscallFS, futils, tempDir)
 	if gerr != nil {
 		t.Errorf("%s", gerr)

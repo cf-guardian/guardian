@@ -113,3 +113,11 @@ func FileExists(path string) bool {
 	}
 	return true
 }
+
+func CleanupDirs(t *testing.T, paths... string) {
+	for _, path := range paths {
+		if err := os.RemoveAll(path); err != nil {
+			t.Errorf("Could not delete %s", path)
+		}
+	}
+}

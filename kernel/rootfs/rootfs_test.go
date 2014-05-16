@@ -60,6 +60,8 @@ func TestNonDirReadWriteBaseDir(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	tempDir := test_support.CreateTempDir()
+	defer test_support.CleanupDirs(t, tempDir)
+
 	filePath := test_support.CreateFile(tempDir, "testFile")
 	mockFileUtils.EXPECT().Filemode(filePath).Return(os.FileMode(0700), nil)
 
@@ -75,6 +77,8 @@ func TestReadOnlyReadWriteBaseDir(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	tempDir := test_support.CreateTempDir()
+	defer test_support.CleanupDirs(t, tempDir)
+
 	dirPath := test_support.CreateDirWithMode(tempDir, "test-rootfs", os.FileMode(0400))
 	mockFileUtils.EXPECT().Filemode(dirPath).Return(os.ModeDir|os.FileMode(0100), nil)
 
@@ -90,6 +94,8 @@ func TestGenerate(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	tempDir := test_support.CreateTempDir()
+	defer test_support.CleanupDirs(t, tempDir)
+
 	mockFileUtils.EXPECT().Filemode(tempDir).Return(os.ModeDir|os.FileMode(0700), nil)
 	rfs, gerr := rootfs.NewRootFS(mockSyscallFS, mockFileUtils, tempDir)
 	if gerr != nil {
@@ -133,6 +139,8 @@ func testGenerateBackoutAfterBindMountReadWriteError(i int, t *testing.T) {
 	defer mockCtrl.Finish()
 
 	tempDir := test_support.CreateTempDir()
+	defer test_support.CleanupDirs(t, tempDir)
+
 	mockFileUtils.EXPECT().Filemode(tempDir).Return(os.ModeDir|os.FileMode(0700), nil)
 	rfs, gerr := rootfs.NewRootFS(mockSyscallFS, mockFileUtils, tempDir)
 	if gerr != nil {
@@ -176,6 +184,8 @@ func TestRemove(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	tempDir := test_support.CreateTempDir()
+	defer test_support.CleanupDirs(t, tempDir)
+
 	mockFileUtils.EXPECT().Filemode(tempDir).Return(os.ModeDir|os.FileMode(0700), nil)
 	rfs, gerr := rootfs.NewRootFS(mockSyscallFS, mockFileUtils, tempDir)
 	if gerr != nil {
@@ -203,6 +213,8 @@ func TestRemoveUnmountSubdirFailure(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	tempDir := test_support.CreateTempDir()
+	defer test_support.CleanupDirs(t, tempDir)
+
 	mockFileUtils.EXPECT().Filemode(tempDir).Return(os.ModeDir|os.FileMode(0700), nil)
 	rfs, gerr := rootfs.NewRootFS(mockSyscallFS, mockFileUtils, tempDir)
 	if gerr != nil {
@@ -237,6 +249,8 @@ func TestRemoveUnmountRootFailure(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	tempDir := test_support.CreateTempDir()
+	defer test_support.CleanupDirs(t, tempDir)
+
 	mockFileUtils.EXPECT().Filemode(tempDir).Return(os.ModeDir|os.FileMode(0700), nil)
 	rfs, gerr := rootfs.NewRootFS(mockSyscallFS, mockFileUtils, tempDir)
 	if gerr != nil {
