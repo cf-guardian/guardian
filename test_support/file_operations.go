@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"testing"
 )
 
 func CreateTempDir() string {
@@ -41,6 +42,27 @@ func CreateFileWithMode(path string, fileName string, mode os.FileMode) string {
 	check(err)
 	return fp
 }
+
+// Create a file and return any error.
+func TestCreateFile(t *testing.T, td string, fileName string) (_ string, err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = e.(error)
+		}
+	}()
+	return CreateFile(td, fileName), nil
+}
+
+// Create a file and return any error.
+func TestCreateFileWithMode(t *testing.T, td string, fileName string, mode os.FileMode) (_ string, err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = e.(error)
+		}
+	}()
+	return CreateFileWithMode(td, fileName, mode), nil
+}
+
 
 func CreateDir(path string, dirName string) string {
 	return CreateDirWithMode(path, dirName, os.FileMode(0755))
