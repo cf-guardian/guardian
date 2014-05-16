@@ -81,3 +81,10 @@ func FileMode(path string) os.FileMode {
 	check(err)
 	return fi.Mode()
 }
+
+func FileExists(path string) bool {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}

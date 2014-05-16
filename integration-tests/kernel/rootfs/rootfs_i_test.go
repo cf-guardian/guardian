@@ -92,6 +92,12 @@ func TestGenerate(t *testing.T) {
 	}
 	prototypeDir := test_support.CreatePrototype(tempDir)
 
+	// home directory should be copied, so give it some content.
+	test_support.CreateFile(filepath.Join(prototypeDir, "home"), "test.home")
+
+	// tmp directory should not be copied, so give it some content.
+	test_support.CreateFile(filepath.Join(prototypeDir, "tmp"), "test.tmp")
+
 	root, gerr := rfs.Generate(prototypeDir)
 	if gerr != nil {
 		t.Errorf("%s", gerr)
@@ -100,13 +106,33 @@ func TestGenerate(t *testing.T) {
 
 	checkRootFS(root, prototypeDir, t)
 
+	// Check home directory copied and writeable.
+	homePath := filepath.Join(root, "home", "test.home")
+	if !test_support.FileExists(homePath) {
+		t.Errorf("home/test.home does not exist in generated root filesystem")
+	}
+	err := os.Remove(homePath)
+	if err != nil {
+		t.Errorf("Failed to delete file from home directory of root %s: %s", root, err)
+	}
+
+	// Check tmp directory was not copied.
+	if test_support.FileExists(filepath.Join(root, "tmp", "test.tmp")) {
+		t.Errorf("tmp/test.tmp should not exist in generated root filesystem")
+	}
+
 	gerr = rfs.Remove(root)
 	if gerr != nil {
 		t.Errorf("%s", gerr)
 		return
 	}
 
-	err := os.RemoveAll(tempDir)
+	if test_support.FileExists(root) {
+		t.Errorf("root %s was not unmounted", root)
+		return
+	}
+
+	err = os.RemoveAll(tempDir)
 	if err != nil {
 		t.Errorf("Error removing test directory %s", err)
 		return
@@ -114,9 +140,17 @@ func TestGenerate(t *testing.T) {
 }
 
 func checkRootFS(root string, prototypeDir string, t *testing.T) {
-	_, err := createFile(t, root, "test")
+	_, err := createFile(t, root, "test.root")
 	if err == nil {
 		t.Errorf("Created file in read-only section of root %s", root)
+	}
+	path, err := createFile(t, filepath.Join(root, "tmp"), "test.write")
+	if err != nil {
+		t.Errorf("Failed to create file in tmp directory of root %s: %s", root, err)
+	}
+	err = os.Remove(path)
+	if err != nil {
+		t.Errorf("Failed to delete file from tmp directory of root %s: %s", root, err)
 	}
 }
 
