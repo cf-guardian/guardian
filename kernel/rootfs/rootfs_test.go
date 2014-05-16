@@ -209,6 +209,13 @@ func TestRemove(t *testing.T) {
 }
 
 func TestRemoveUnmountSubdirFailure(t *testing.T) {
+	numDirs := len(test_support.RootFSDirs())
+	for i := 0; i <= numDirs-1; i++ {
+		testRemoveUnmountSubdirFailure(i, t)
+	}
+}
+
+func testRemoveUnmountSubdirFailure(i int, t *testing.T) {
 	mockCtrl, mockFileUtils, mockSyscallFS := setupMocks(t)
 	defer mockCtrl.Finish()
 
@@ -225,9 +232,9 @@ func TestRemoveUnmountSubdirFailure(t *testing.T) {
 	root := "/test-rootfs"
 
 	dirs := test_support.RootFSDirs()
-	for i, dir := range dirs {
+	for j, dir := range dirs {
 		var err error
-		if i == len(dirs)-1 {
+		if j == i {
 			err = errors.New("an error")
 		}
 		mockSyscallFS.EXPECT().Unmount(filepath.Join(root, dir)).Return(err)
