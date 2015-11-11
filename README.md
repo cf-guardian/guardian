@@ -6,6 +6,8 @@ Experiments to improve the testability of [warden](https://github.com/cloudfound
 
 ## Objectives
 
+**These objectives are those of the original guardian project and should not be confused with the objectives of the later project, also dubbed "guardian", to re-implement the container support of garden-linux on runc.**
+
 1. Understandability: the code should be clearly structured and documented so that a newcomer can understand the rationale and be able to propose changes.
 1. Robustness: the code should function correctly or fail with meaningful diagnostics.
 1. Maintainability: it should be straightforward to fix bugs and add new features.
