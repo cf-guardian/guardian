@@ -45,7 +45,8 @@ const (
 )
 
 type Fileutils interface {
-
+	// Default is false. If is set to true symbolic links are copied
+	IgnoreSymlink(ok bool)
 	/*
 		Copy copies a source file to a destination file. File contents are copied. File mode and permissions
 		(as described in http://golang.org/pkg/os/#FileMode) are copied.
@@ -63,7 +64,7 @@ type Fileutils interface {
 	/*
 		Tests the existence of a file or directory at a given path. Returns true if and only if the file or
 		directory exists.
-	 */
+	*/
 	Exists(path string) bool
 
 	/*
@@ -74,12 +75,16 @@ type Fileutils interface {
 }
 
 type futils struct {
+	ignoreSymlink bool
 }
 
 func New() Fileutils {
 	return &futils{}
 }
 
+func (f *futils) IgnoreSymlink(ok bool) {
+	f.ignoreSymlink = true
+}
 func (f *futils) Copy(destPath string, srcPath string) gerror.Gerror {
 	if glog.V(1) {
 		glog.Infof("Copy(%q, %q)", destPath, srcPath)
@@ -96,7 +101,7 @@ func (f *futils) doCopy(destPath string, srcPath string, topSrcPath string) gerr
 		return gerr
 	}
 
-	if srcMode&os.ModeSymlink == os.ModeSymlink {
+	if srcMode&os.ModeSymlink == os.ModeSymlink && f.ignoreSymlink == false {
 		return f.copySymlink(destPath, srcPath, topSrcPath)
 	} else if srcMode.IsDir() {
 		return f.copyDir(destPath, srcPath, topSrcPath)
@@ -132,7 +137,7 @@ func (f *futils) copyDir(destination string, source string, topSource string) ge
 	return nil
 }
 
-func getNames(dirPath string) (names [] string, gerr gerror.Gerror) {
+func getNames(dirPath string) (names []string, gerr gerror.Gerror) {
 	src, err := os.Open(dirPath)
 	if err != nil {
 		return names, gerror.NewFromError(ErrOpeningSourceDir, err)
@@ -249,7 +254,7 @@ func (f *futils) copySymlink(destLinkPath string, srcLinkPath string, topSrcPath
 	return nil
 }
 
-func (f * futils) Exists(path string) bool {
+func (f *futils) Exists(path string) bool {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return false
 	}
